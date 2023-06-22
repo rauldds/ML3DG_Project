@@ -36,6 +36,8 @@ with o3d.utility.VerbosityContextManager(
         o3d.utility.VerbosityLevel.Debug) as cm:
     mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(
         pcl, depth=9)
+print("Creating Mesh from Input Point Cloud")
+print(f'Exported to: {mesh_input_pointcloud_path}')
 o3d.io.write_triangle_mesh(mesh_input_pointcloud_path, mesh)
 
 #Visualization of the generated mesh
@@ -48,7 +50,9 @@ o3d.visualization.draw_geometries([mesh],
 # Conversion of non-watertight mesh to watertight (0 holes)
 # Used scripts from "Robust Watertight Manifold Surface Generation Method for ShapeNet Models"
 # Link: https://arxiv.org/pdf/1802.01698.pdf
-process = subprocess.Popen(['./other_repos/Manifold/build/manifold', mesh_input_pointcloud_path, watertight_mesh_path], 
+print("Creating Watertight Mesh")
+print(f'Exported to: {watertight_mesh_path}')
+process = subprocess.Popen(['./additional_repos/Manifold/build/manifold', mesh_input_pointcloud_path, watertight_mesh_path], 
                            stdout=subprocess.PIPE,
                            universal_newlines=True)
 while True:
@@ -66,6 +70,8 @@ voxels = mtv(mesh, 64, pad=False)
 visualize_sdf(voxels,sdf_visualization_path)
 
 # Implementation of marching cubes to visualize reconstruction based on SDF
+print("Creating mesh reconstruction from SDF")
+print(f'Exported to: {recons_path}')
 vertices, faces, normals, _ = skimage.measure.marching_cubes(voxels, level=0)
 mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_normals=normals)
 result = trimesh.exchange.ply.export_ply(mesh, encoding='ascii')
