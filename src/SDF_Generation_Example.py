@@ -6,6 +6,7 @@ import trimesh
 import skimage
 from mesh_to_sdf import mesh_to_voxels as mtv
 from SDF_Visualizer import visualize_sdf
+from recolorize_mesh import colorizing
 
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-pc", "--point_cloud", help="point cloud path", type=str)
@@ -18,7 +19,7 @@ pc_path = args.point_cloud
 mesh_input_pointcloud_path = "./results/mesh_input_cloud.obj"
 watertight_mesh_path = "./results/mesh_input_cloud_watertight.obj"
 sdf_visualization_path = "./results/sdf_visualization.ply"
-recons_path ="./results/mesh_input_cloud_recon_marching_cubes.ply"
+recons_path ="./results/mesh_input_cloud_recon_marching_cubes.obj"
 
 #Extraction of point cloud data from binary file
 scan = np.fromfile(pc_path, dtype=np.float32)
@@ -50,8 +51,6 @@ o3d.visualization.draw_geometries([mesh],
 # Conversion of non-watertight mesh to watertight (0 holes)
 # Used scripts from "Robust Watertight Manifold Surface Generation Method for ShapeNet Models"
 # Link: https://arxiv.org/pdf/1802.01698.pdf
-print("Creating Watertight Mesh")
-print(f'Exported to: {watertight_mesh_path}')
 process = subprocess.Popen(['./additional_repos/Manifold/build/manifold', mesh_input_pointcloud_path, watertight_mesh_path], 
                            stdout=subprocess.PIPE,
                            universal_newlines=True)
@@ -64,8 +63,14 @@ while True:
         print('RETURN CODE', return_code)
         break
 
+#COLORIZING MANIFOLD MESH
+mesh_manifold = trimesh.load(watertight_mesh_path)
+mesh = colorizing(trimesh.load(mesh_input_pointcloud_path),mesh_manifold)
+print("Creating Colored Watertight Mesh")
+print(f'Exported to: {watertight_mesh_path}')
+trimesh.exchange.export.export_mesh(mesh,watertight_mesh_path,"obj")
+
 # Generation of SDF given the watertight mesh
-mesh = trimesh.load(watertight_mesh_path)
 voxels = mtv(mesh, 64, pad=False)
 visualize_sdf(voxels,sdf_visualization_path)
 
@@ -74,7 +79,4 @@ print("Creating mesh reconstruction from SDF")
 print(f'Exported to: {recons_path}')
 vertices, faces, normals, _ = skimage.measure.marching_cubes(voxels, level=0)
 mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_normals=normals)
-result = trimesh.exchange.ply.export_ply(mesh, encoding='ascii')
-output_file = open(recons_path, "wb+")
-output_file.write(result)
-output_file.close()
+trimesh.exchange.export.export_mesh(mesh,recons_path,"obj")
