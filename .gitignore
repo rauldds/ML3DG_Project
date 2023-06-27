@@ -1,5 +1,5 @@
 results/
 src/__pycache__/
-model/__pycache__/
+model/__pycache__
 model/verify_model.py
 src/rescaling_marching_cubes.py
