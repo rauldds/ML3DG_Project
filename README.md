@@ -4,7 +4,7 @@ Reimplementation of [GRNet](https://github.com/hzxie/GRNet) with a few modificat
 ## Execution SDF Generation Example
 Just run the following command from the root folder of the repo:
 ```
-python3 src/SDF_Generation_Example.py -pc /PATH/TO/POINTCLOUD.bin
+python3 examples/SDF_Generation_Example.py -pc /PATH/TO/POINTCLOUD.bin
 ```
 
 Note: Don't forget to compile manifold
