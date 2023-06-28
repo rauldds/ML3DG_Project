@@ -2,4 +2,8 @@ results/
 src/__pycache__/
 model/__pycache__
 model/verify_model.py
-src/rescaling_marching_cubes.py
+examples/rescaling_marching_cubes.py
+examples/vdb_sdf.py
+src/paths_to_point_clouds.txt
+utils/paths_to_point_clouds.txt
+utils/experiment_dataset.txt

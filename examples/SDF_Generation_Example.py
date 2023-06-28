@@ -5,8 +5,8 @@ import subprocess
 import trimesh
 import skimage
 from mesh_to_sdf import mesh_to_voxels as mtv
-from SDF_Visualizer import visualize_sdf
-from recolorize_mesh import colorizing
+from utils.SDF_Visualizer import visualize_sdf
+from utils.recolorize_mesh import colorizing
 
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-pc", "--point_cloud", help="point cloud path", type=str)
