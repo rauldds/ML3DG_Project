@@ -7,7 +7,7 @@ import skimage
 from mesh_to_sdf import mesh_to_voxels as mtv
 
 import config.dataset_generation_GT_config
-from examples.recolorize_mesh import colorizing
+from utils.recolorize_mesh import colorizing
 import time
 
 DEPTH = config.dataset_generation_GT_config.DEPTH
