@@ -14,7 +14,7 @@ import utils.helpers
 
 from datetime import datetime
 from time import time
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 from core.test import test_net
 from extensions.chamfer_dist import ChamferDistance
