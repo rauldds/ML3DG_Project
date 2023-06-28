@@ -19,7 +19,7 @@ from torch.utils.tensorboard import SummaryWriter
 from core.test import test_net
 from extensions.chamfer_dist import ChamferDistance
 from extensions.gridding_loss import GriddingLoss
-from models.grnet import GRNet
+from model.grnet import GRNet
 from utils.average_meter import AverageMeter
 from utils.metrics import Metrics
 
