@@ -1,6 +1,7 @@
 results/
 src/__pycache__/
 model/__pycache__
+utils/__pycache__
 model/verify_model.py
 examples/rescaling_marching_cubes.py
 examples/vdb_sdf.py

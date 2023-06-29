@@ -21,3 +21,5 @@ python setup.py install --user
 cd $GRNET_HOME/extensions/gridding_loss
 python setup.py install --user
 ```
+
+#### Dataset Generation Steps
