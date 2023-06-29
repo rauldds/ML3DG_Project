@@ -8,3 +8,4 @@ examples/vdb_sdf.py
 src/paths_to_point_clouds.txt
 utils/paths_to_point_clouds.txt
 utils/experiment_dataset.txt
+.idea
