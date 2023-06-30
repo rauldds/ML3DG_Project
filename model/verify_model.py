@@ -2,7 +2,7 @@ from pathlib import Path
 from statistics import mode
 import numpy as np
 import torch
-from grnet import GRNet
+from model.grnet import GRNet
 import skimage
 import trimesh
 import open3d as o3d
@@ -17,7 +17,7 @@ checkpoint = torch.load(Path)
 
 model.load_state_dict(checkpoint['model_state_dict'])
 
-optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+optimizer.load_state_dict(checkpoint['optimizer_state_dict'])'''
 
 x = torch.ones((1,1,64,64,64))
 x = x.cuda()
@@ -30,7 +30,7 @@ recon, class_pred = model.forward(data=x)
 print(recon.shape)
 print(class_pred.shape)
 
-vertices, faces, normals, _ = skimage.measure.marching_cubes(recon, level=0)
+'''vertices, faces, normals, _ = skimage.measure.marching_cubes(recon, level=0)
 
 mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_normals=normals)
 

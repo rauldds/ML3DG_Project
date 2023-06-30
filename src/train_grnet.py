@@ -43,7 +43,7 @@ def train(model, train_dataloader, val_dataloader, device, config):
 
             optimizer.zero_grad()
 
-            class_pred, reconstruction = model(batch["incomplete_view"])
+            reconstruction, class_pred = model(batch["incomplete_view"])
             target_sdf = batch["target_sdf"]
 
             loss =loss_criterion(reconstruction, target_sdf)
@@ -77,7 +77,7 @@ def main(config):
         train_dataset,   # Datasets return data one sample at a time; Dataloaders use them and aggregate samples into batches
         batch_size=config['batch_size'],   # The size of batches is defined here
         shuffle=True,    # Shuffling the order of samples is useful during training to prevent that the network learns to depend on the order of the input data
-        num_workers=14,   # Data is usually loaded in parallel by num_workers
+        num_workers=config['num_workers'],   # Data is usually loaded in parallel by num_workers
         pin_memory=True,  # This is an implementation detail to speed up data uploading to the GPU
     )
 

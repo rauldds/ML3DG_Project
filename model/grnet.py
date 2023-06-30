@@ -7,8 +7,8 @@
 
 import torch
 
-from extensions.cubic_feature_sampling import CubicFeatureSampling
-from extensions.gridding import Gridding, GriddingReverse
+from model.extensions.cubic_feature_sampling import CubicFeatureSampling
+from model.extensions.gridding import Gridding, GriddingReverse
 
 
 class RandomPointSampling(torch.nn.Module):
