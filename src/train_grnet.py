@@ -6,6 +6,7 @@ from model.grnet import GRNet
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
 import utils.data_loaders
+import os
 
 
 def train(model, train_dataloader, val_dataloader, device, config):
@@ -49,6 +50,7 @@ def train(model, train_dataloader, val_dataloader, device, config):
             loss =loss_criterion(reconstruction, target_sdf)
             loss.backward()
             optimizer.step()
+            scheduler.step()
 
             train_loss_running += loss.item()
             iteration = epoch * len(train_dataloader) + batch_idx
@@ -58,6 +60,21 @@ def train(model, train_dataloader, val_dataloader, device, config):
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
                 print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {train_loss_running / config["print_every_n"]:.6f}')
                 train_loss_running = 0.
+            
+            best_loss = 100
+            #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
+            if epoch%config["save_freq"] == 0 or train_loss_running<best_loss:
+                file_name = 'ckpt-best.pth' if train_loss_running<best_loss else 'ckpt-epoch-%03d.pth' % epoch
+                output_path = "./ckpts/"+file_name
+                torch.save({
+                    'epoch_index': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict()
+                }, output_path)  # yapf: disable
+
+                print(f'Saved checkpoint to {output_path}')
+                if train_loss_running<best_loss:
+                    best_loss = train_loss_running
 
 
 def main(config):
@@ -83,8 +100,6 @@ def main(config):
 
     model = GRNet()
     model.to(device)
-
-    Path(f'exercise_3/runs/{config["experiment_name"]}').mkdir(exist_ok=True, parents=True)
 
     train(model=model,
           train_dataloader=train_dataloader,
