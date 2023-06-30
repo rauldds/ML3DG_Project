@@ -1,10 +1,12 @@
 import json
 import logging
+from re import T
 import numpy as np
 from pathlib import Path
 import torch.utils.data.dataset
 from enum import Enum, unique
 from tqdm import tqdm
+from utils.class_map import CLASS_MAP
 
 @unique
 class DatasetSubset(Enum):
@@ -47,10 +49,13 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
                                                                   view_id=view_id)
         truncated_incomplete_view = ScanObjectNNDataset.truncate_sdf(incomplete_view)
 
+        target_class = np.zeros((1,15),np.float32)
+        target_class[0,CLASS_MAP[class_name]] = 1.0
+
         return {
             "target_sdf": truncated_sdf,
             "incomplete_view": truncated_incomplete_view,
-            "class": class_name
+            "class": target_class
         }
 
     @staticmethod
@@ -81,6 +86,13 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
         sdf = sdf * 32
         input_sdf = np.clip(sdf, a_min=-3.0, a_max=3.0)
         return input_sdf
+
+
+if __name__ == "__main__":
+    dataset = ScanObjectNNDataset(split='overfit')
+    test_sample = dataset[4]
+    print(test_sample["class"].shape)
+    #dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
 
 # Usage example in case modifications are needed
 #
