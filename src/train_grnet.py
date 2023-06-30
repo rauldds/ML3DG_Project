@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from utils.data_loaders import ScanObjectNNDataset
 from model.grnet import GRNet
 from pathlib import Path
+from torch.utils.tensorboard import SummaryWriter
 import utils.data_loaders
 
 
@@ -17,6 +18,7 @@ def train(model, train_dataloader, val_dataloader, device, config):
 
     train_loss_running = 0.
 
+    tb = SummaryWriter()
     for epoch in range(config['max_epochs']):
         for batch_idx, batch in enumerate(train_dataloader):
             ScanObjectNNDataset.send_data_to_device(batch, device)
@@ -32,6 +34,8 @@ def train(model, train_dataloader, val_dataloader, device, config):
 
             train_loss_running += loss.item()
             iteration = epoch * len(train_dataloader) + batch_idx
+
+            tb.add_scalar("Train_Loss", train_loss_running, epoch)
 
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
                 print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {train_loss_running / config["print_every_n"]:.6f}')
