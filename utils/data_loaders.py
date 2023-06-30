@@ -20,7 +20,7 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
         assert split in ['train', 'val', 'overfit']
 
         # Read the lines from the split or overfit file and separate view, sample, and class elements
-        with open(f"{split}.txt", "r") as file:
+        with open(f".utils/{split}.txt", "r") as file:
             lines = [line.strip().split() for line in file]
 
         # Unpack the elements into separate variables using list comprehension
@@ -87,18 +87,18 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
 # Classes ['table', 'table', 'table', 'table']
 # Target SDFs shape: torch.Size([4, 1, 64, 64, 64])
 
-from torch.utils.data import DataLoader
-dataset = ScanObjectNNDataset(split='overfit')
-test_sample = dataset[10]
-dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
-
-for batch in dataloader:
-    # Extract the batch elements
-    target_sdfs = batch['target_sdf']
-    incomplete_views = batch['incomplete_view']
-    classes = batch['class']
-
-    # Print the shapes of the batched tensors as an example
-    print(f"Target SDFs shape: {target_sdfs.shape}")
-    print(f"Incomplete views shape: {incomplete_views.shape}")
-    print(f"Classes {classes}")
+# from torch.utils.data import DataLoader
+# dataset = ScanObjectNNDataset(split='overfit')
+# test_sample = dataset[10]
+# dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
+#
+# for batch in dataloader:
+#     # Extract the batch elements
+#     target_sdfs = batch['target_sdf']
+#     incomplete_views = batch['incomplete_view']
+#     classes = batch['class']
+#
+#     # Print the shapes of the batched tensors as an example
+#     print(f"Target SDFs shape: {target_sdfs.shape}")
+#     print(f"Incomplete views shape: {incomplete_views.shape}")
+#     print(f"Classes {classes}")
