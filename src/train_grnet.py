@@ -1,3 +1,4 @@
+from math import gamma
 import torch
 from torch.utils.data import DataLoader
 from utils.data_loaders import ScanObjectNNDataset
@@ -10,8 +11,25 @@ def train(model, train_dataloader, val_dataloader, device, config):
     loss_criterion = torch.nn.SmoothL1Loss()
     loss_criterion.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'])
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5)
+    train_parameters = []
+    train_parameters += list(model.gridding.parameters())
+    train_parameters += list(model.conv1.parameters())
+    train_parameters += list(model.conv2.parameters())
+    train_parameters += list(model.conv3.parameters())
+    train_parameters += list(model.conv4.parameters())
+    train_parameters += list(model.fc5.parameters())
+    train_parameters += list(model.fc6.parameters())
+    train_parameters += list(model.dconv7.parameters())
+    train_parameters += list(model.dconv8.parameters())
+    train_parameters += list(model.dconv9.parameters())
+    train_parameters += list(model.dconv10.parameters())
+    train_parameters += list(model.gridding_rev.parameters())
+
+    optimizer = torch.optim.Adam(train_parameters,
+                                 lr=config['learning_rate'],
+                                 weight_decay=config['weight_decay'],
+                                 betas=config["betas"])
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=config["milestones"],gamma=config["gamma"])
 
     model.train()
 
@@ -23,7 +41,7 @@ def train(model, train_dataloader, val_dataloader, device, config):
 
             optimizer.zero_grad()
 
-            reconstruction = model(batch["incomplete_view"])
+            class_pred, reconstruction = model(batch["incomplete_view"])
             target_sdf = batch["target_sdf"]
 
             loss =loss_criterion(reconstruction, target_sdf)

@@ -7,11 +7,11 @@ import trimesh
 import skimage
 from mesh_to_sdf import mesh_to_voxels as mtv
 
-import config.dataset_generation_GT_config
+#import config.dataset_generation_GT_config
 from utils.recolorize_mesh import colorizing
 import time
 
-DEPTH = config.dataset_generation_GT_config.DEPTH
+DEPTH = 5
 # TODO: Make sure that you have the txt file with the paths of all the point clouds.
 #       paths_txt_file_generator.py
 
@@ -35,7 +35,7 @@ def generate_incomplete_view(scan):
     # #print(f"normal sample: {sn}")
 
     # Probably would be a good idea to modify the elimination percentage to up to 75 percent
-    elimination_percentage = np.random.random_sample() * 0.5 + 0.45
+    elimination_percentage = np.random.random_sample() * 0.4 + 0.1
     #print(f"percentage of the cloud that'll be eliminated: {elimination_percentage}")
 
     # Get coordinates of the sampled point
