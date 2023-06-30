@@ -44,6 +44,9 @@ def train(model, train_dataloader, val_dataloader, device, config):
             optimizer.zero_grad()
 
             reconstruction, class_pred = model(batch["incomplete_view"])
+            # TODO: understand the following mask:
+            #  reconstruction[batch_val['input_sdf'][:, 1] == 1] = 0
+            #  target[batch_val['input_sdf'][:, 1] == 1] = 0
             target_sdf = batch["target_sdf"]
 
             loss =loss_criterion(reconstruction, target_sdf)
@@ -84,7 +87,7 @@ def main(config):
     model = GRNet()
     model.to(device)
 
-    Path(f'exercise_3/runs/{config["experiment_name"]}').mkdir(exist_ok=True, parents=True)
+    Path(f'/runs/{config["experiment_name"]}').mkdir(exist_ok=True, parents=True)
 
     train(model=model,
           train_dataloader=train_dataloader,
