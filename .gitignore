@@ -8,4 +8,10 @@ examples/vdb_sdf.py
 src/paths_to_point_clouds.txt
 utils/paths_to_point_clouds.txt
 utils/experiment_dataset.txt
+utils/train.txt
+utils/overfit.txt
+utils/val.txt
+utils/test.txt
+utils/pg.py
+utils/output.txt
 .idea
