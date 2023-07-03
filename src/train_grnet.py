@@ -5,6 +5,7 @@ from utils.data_loaders import ScanObjectNNDataset
 from model.grnet import GRNet
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
+from model.extensions.chamfer_dist import ChamferDistance
 import utils.data_loaders
 import os
 
@@ -49,11 +50,13 @@ def train(model, train_dataloader, val_dataloader, device, config):
             #  reconstruction[batch_val['input_sdf'][:, 1] == 1] = 0
             #  target[batch_val['input_sdf'][:, 1] == 1] = 0
             target_sdf = batch["target_sdf"]
-
+            reconstruction[batch["incomplete_view"] > 0] = 0
+            target_sdf[batch["incomplete_view"] > 0] = 0
             loss =loss_criterion(reconstruction, target_sdf)
             loss.backward()
             optimizer.step()
             scheduler.step()
+
 
             train_loss_running += loss.item()
             iteration = epoch * len(train_dataloader) + batch_idx
@@ -66,7 +69,7 @@ def train(model, train_dataloader, val_dataloader, device, config):
             
             best_loss = 100
             #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
-            if epoch%config["save_freq"] == 0 or train_loss_running<best_loss:
+            if epoch%config["save_freq"] == 0:
                 file_name = 'ckpt-best.pth' if train_loss_running<best_loss else 'ckpt-epoch-%03d.pth' % epoch
                 output_path = "./ckpts/"+file_name
                 torch.save({
@@ -75,7 +78,7 @@ def train(model, train_dataloader, val_dataloader, device, config):
                     'optimizer_state_dict': optimizer.state_dict()
                 }, output_path)  # yapf: disable
 
-                print(f'Saved checkpoint to {output_path}')
+                # print(f'Saved checkpoint to {output_path}')
                 if train_loss_running<best_loss:
                     best_loss = train_loss_running
 
