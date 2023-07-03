@@ -16,8 +16,8 @@ class DatasetSubset(Enum):
 
 class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
     # TODO: Update path
-    #DATASET_PATH = '/media/davidg-dl/Second SSD/DATASET_test/'
-    DATASET_PATH = '/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/'
+    DATASET_PATH = '/media/davidg-dl/Second SSD/DATASET_test/'
+    # DATASET_PATH = '/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/'
 
     #TODO: how many of the original implementations do we need? need to figure it out when testing in the train loop
     def __init__(self, split, options=None, file_list =None, transforms=None):
@@ -49,8 +49,10 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
                                                                   view_id=view_id)
         truncated_incomplete_view = ScanObjectNNDataset.truncate_sdf(incomplete_view)
 
-        target_class = np.zeros((1,15),np.float32)
-        target_class[0,CLASS_MAP[class_name]] = 1.0
+        # target_class = np.zeros((1,15),np.float32)
+        # target_class[0,CLASS_MAP[class_name]] = 1.0
+
+        target_class = CLASS_MAP[class_name]
 
         return {
             "target_sdf": truncated_sdf,
@@ -90,8 +92,9 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
 
 if __name__ == "__main__":
     dataset = ScanObjectNNDataset(split='overfit')
-    test_sample = dataset[4]
-    print(test_sample["class"].shape)
+    # test_sample = dataset[4]
+    # print(test_sample["class"].shape)
+    # print(test_sample["class"])
     #dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
 
 # Usage example in case modifications are needed
@@ -101,18 +104,18 @@ if __name__ == "__main__":
 # Classes ['table', 'table', 'table', 'table']
 # Target SDFs shape: torch.Size([4, 1, 64, 64, 64])
 
-# from torch.utils.data import DataLoader
-# dataset = ScanObjectNNDataset(split='overfit')
-# test_sample = dataset[10]
-# dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
-#
-# for batch in dataloader:
-#     # Extract the batch elements
-#     target_sdfs = batch['target_sdf']
-#     incomplete_views = batch['incomplete_view']
-#     classes = batch['class']
-#
-#     # Print the shapes of the batched tensors as an example
-#     print(f"Target SDFs shape: {target_sdfs.shape}")
-#     print(f"Incomplete views shape: {incomplete_views.shape}")
-#     print(f"Classes {classes}")
+from torch.utils.data import DataLoader
+dataset = ScanObjectNNDataset(split='overfit')
+test_sample = dataset[10]
+dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
+
+for batch in dataloader:
+    # Extract the batch elements
+    target_sdfs = batch['target_sdf']
+    incomplete_views = batch['incomplete_view']
+    classes = batch['class']
+
+    # Print the shapes of the batched tensors as an example
+    # print(f"Target SDFs shape: {target_sdfs.shape}")
+    # print(f"Incomplete views shape: {incomplete_views.shape}")
+    print(f"Classes {classes}")
