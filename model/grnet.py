@@ -43,33 +43,39 @@ class GRNet(torch.nn.Module):
             torch.nn.Conv3d(1, 32, kernel_size=4, padding=2),
             torch.nn.BatchNorm3d(32),
             torch.nn.LeakyReLU(0.2),
+            torch.nn.Dropout(),
             torch.nn.MaxPool3d(kernel_size=2)
         )
         self.conv2 = torch.nn.Sequential(
             torch.nn.Conv3d(32, 64, kernel_size=4, padding=2),
             torch.nn.BatchNorm3d(64),
             torch.nn.LeakyReLU(0.2),
+            torch.nn.Dropout(),
             torch.nn.MaxPool3d(kernel_size=2)
         )
         self.conv3 = torch.nn.Sequential(
             torch.nn.Conv3d(64, 128, kernel_size=4, padding=2),
             torch.nn.BatchNorm3d(128),
             torch.nn.LeakyReLU(0.2),
+            torch.nn.Dropout(),
             torch.nn.MaxPool3d(kernel_size=2)
         )
         self.conv4 = torch.nn.Sequential(
             torch.nn.Conv3d(128, 256, kernel_size=4, padding=2),
             torch.nn.BatchNorm3d(256),
             torch.nn.LeakyReLU(0.2),
+            torch.nn.Dropout(),
             torch.nn.MaxPool3d(kernel_size=2)
         )
         self.fc5 = torch.nn.Sequential(
             torch.nn.Linear(16384, 2048),
-            torch.nn.ReLU()
+            torch.nn.ReLU(),
+            torch.nn.Dropout()
         )
         self.fc6 = torch.nn.Sequential(
             torch.nn.Linear(2048, 16384),
-            torch.nn.ReLU()
+            torch.nn.ReLU(),
+            torch.nn.Dropout()
         )
         self.dconv7 = torch.nn.Sequential(
             torch.nn.ConvTranspose3d(256, 128, kernel_size=4, stride=2, bias=False, padding=1),

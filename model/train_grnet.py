@@ -5,6 +5,7 @@ from utils.data_loaders import ScanObjectNNDataset
 from model.grnet import GRNet
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
+from model.extensions.chamfer_dist import ChamferDistance
 import utils.data_loaders
 import os
 
@@ -41,6 +42,8 @@ def train(model, train_dataloader, val_dataloader, device, config, trainable_par
             class_target = batch["class"]
 
             if config["train_mode"] == "completion":
+                reconstruction[batch["incomplete_view"] > 0] = 0
+                target_sdf[batch["incomplete_view"] > 0] = 0
                 loss = completion_loss_criterion(reconstruction, target_sdf)
             elif config["train_mode"] == "classification":
                 loss = classification_loss_criterion(class_pred,class_target)
@@ -51,6 +54,7 @@ def train(model, train_dataloader, val_dataloader, device, config, trainable_par
             loss.backward()
             optimizer.step()
             scheduler.step()
+
 
             train_loss_running += loss.item()
             iteration = epoch * len(train_dataloader) + batch_idx
@@ -64,9 +68,14 @@ def train(model, train_dataloader, val_dataloader, device, config, trainable_par
             # TODO: MOVE THIS BEST_LOSS TO A MORE PROPER LOCATION
             best_loss = 100
             #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
+<<<<<<< HEAD:model/train_grnet.py
             if epoch%config["save_freq"] == 0 or train_loss_running<best_loss:
                 file_name = 'ckpt-best_' if train_loss_running<best_loss else 'ckpt-epoch-%03d_' % epoch
                 file_name = file_name + config["train_mode"] + ".pth"
+=======
+            if epoch%config["save_freq"] == 0:
+                file_name = 'ckpt-best.pth' if train_loss_running<best_loss else 'ckpt-epoch-%03d.pth' % epoch
+>>>>>>> c93fcb8ae099a9bde94f70371d7edba1904d402f:src/train_grnet.py
                 output_path = "./ckpts/"+file_name
                 torch.save({
                     'epoch_index': epoch,
@@ -74,7 +83,7 @@ def train(model, train_dataloader, val_dataloader, device, config, trainable_par
                     'optimizer_state_dict': optimizer.state_dict()
                 }, output_path)  # yapf: disable
 
-                print(f'Saved checkpoint to {output_path}')
+                # print(f'Saved checkpoint to {output_path}')
                 if train_loss_running<best_loss:
                     best_loss = train_loss_running
 
