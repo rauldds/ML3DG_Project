@@ -40,7 +40,7 @@ def train(model, train_dataloader, val_dataloader, device, config, trainable_par
             #  target[batch_val['input_sdf'][:, 1] == 1] = 0
             target_sdf = batch["target_sdf"]
             class_target = batch["class"]
-
+            
             if config["train_mode"] == "completion":
                 reconstruction[batch["incomplete_view"] > 0] = 0
                 target_sdf[batch["incomplete_view"] > 0] = 0
@@ -68,14 +68,9 @@ def train(model, train_dataloader, val_dataloader, device, config, trainable_par
             # TODO: MOVE THIS BEST_LOSS TO A MORE PROPER LOCATION
             best_loss = 100
             #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
-<<<<<<< HEAD:model/train_grnet.py
             if epoch%config["save_freq"] == 0 or train_loss_running<best_loss:
                 file_name = 'ckpt-best_' if train_loss_running<best_loss else 'ckpt-epoch-%03d_' % epoch
                 file_name = file_name + config["train_mode"] + ".pth"
-=======
-            if epoch%config["save_freq"] == 0:
-                file_name = 'ckpt-best.pth' if train_loss_running<best_loss else 'ckpt-epoch-%03d.pth' % epoch
->>>>>>> c93fcb8ae099a9bde94f70371d7edba1904d402f:src/train_grnet.py
                 output_path = "./ckpts/"+file_name
                 torch.save({
                     'epoch_index': epoch,
