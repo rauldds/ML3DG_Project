@@ -22,7 +22,7 @@ def generate_individual_npz_and_colorized_mesh(view_number: int):
 
 for i, view in enumerate(range(VIEWS_TO_GENERATE)):
     # TODO: MODIFY VIEW NUMBER IF NECESSARY
-    generate_individual_npz_and_colorized_mesh(view_number=4)
+    generate_individual_npz_and_colorized_mesh(view_number=5)
     print(
         f"\n[INFO] Process completed for view {i + 1},\n[INFO] Remaining views: {VIEWS_TO_GENERATE - (i + 1)}\n")
     print(

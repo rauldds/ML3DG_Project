@@ -116,7 +116,7 @@ def train_net(cfg):
             losses.update([sparse_loss.item() * 1000, dense_loss.item() * 1000])
 
             grnet.zero_grad()
-            _loss.backward()
+                _loss.backward()
             grnet_optimizer.step()
 
             n_itr = (epoch_idx - 1) * n_batches + batch_idx
