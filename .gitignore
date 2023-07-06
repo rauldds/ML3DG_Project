@@ -14,4 +14,8 @@ utils/val.txt
 utils/test.txt
 utils/pg.py
 utils/output.txt
+runs
+ckpts
 .idea
+config/__pycache__
+utils/paths_to_point_clouds_original.txt

@@ -13,5 +13,3 @@ resizing_colorizing_marching_cubes_example: from the root folder run:
 ```
 python3 ./src/resizing_colorizing_marching_cubes_example.py
 ```
-# Notes
-- No conversion from SDF to TSDF has been done yet. Therefore, it is important to make sure that marching cubes still works after clamping.
