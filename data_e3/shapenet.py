@@ -17,7 +17,7 @@ class ShapeNet(torch.utils.data.Dataset):
         assert split in ['train', 'val', 'overfit']
         self.truncation_distance = 3
 
-        self.items = Path(f"./data/splits/shapenet/{split}.txt").read_text().splitlines()  # keep track of shapes based on split
+        self.items = Path(f"./data_e3/splits/shapenet/{split}.txt").read_text().splitlines()  # keep track of shapes based on split
 
     def __getitem__(self, index):
         sdf_id, df_id = self.items[index].split(' ')
@@ -28,13 +28,12 @@ class ShapeNet(torch.utils.data.Dataset):
         # TODO Apply truncation to sdf and df
         # TODO Stack (distances, sdf sign) for the input sdf
         # TODO Log-scale target df
+        input_sdf = np.clip(input_sdf, -3, 3)
+        target_df = np.clip(target_df, -3, 3)
+        #input_sdf = input_sdf.astype(np.float32)
+        #target_df = target_df.astype(np.float32)
 
-        #####################################################
-        #     RESPECT THE KEY NAMES OF THE DICT BELOW       #
-        #     ADDITIONALLY, IF CLASSIFICATION WILL BE       #
-        #     TESTED, CLASS KEY AND VALUE SHOULD ALSO       #
-        #                 BE RETRIEVABLE                    #
-        #####################################################
+
         return {
             'name': f'{sdf_id}-{df_id}',
             'incomplete_view': input_sdf,
@@ -47,17 +46,27 @@ class ShapeNet(torch.utils.data.Dataset):
     @staticmethod
     def move_batch_to_device(batch, device):
         # TODO add code to move batch to device
-        pass
+        batch['incomplete_view'] = batch['incomplete_view'].to(device)
+        batch['target_sdf'] = batch['target_sdf'].to(device)
 
     @staticmethod
     def get_shape_sdf(shapenet_id):
-        sdf = None
-        # TODO implement sdf data loading
-        # WHAT THE NET WILL EXPECT: torch.Size([batch_size, 1, 32, 32, 32])
+        shapenet_path = ShapeNet.dataset_sdf_path / (shapenet_id + '.sdf')
+        dimX, dimY, dimZ = np.fromfile(shapenet_path, dtype=np.uint64, count=3)
+        with open(shapenet_path, 'rb') as f:
+            f.seek(24)
+            sdf = np.fromfile(f, dtype=np.float32, count=-1)
+        sdf = sdf.reshape((dimX, dimY, dimZ))
+        # TODO implement df data loading
         return sdf
 
     @staticmethod
     def get_shape_df(shapenet_id):
-        df = None
+        shapenet_path = ShapeNet.dataset_df_path / (shapenet_id + '.df')
+        dimX, dimY, dimZ = np.fromfile(shapenet_path, dtype=np.uint64, count=3)
+        with open(shapenet_path, 'rb') as f:
+            f.seek(24)
+            df = np.fromfile(f, dtype=np.float32, count=-1)
+        df = df.reshape((dimX, dimY, dimZ))
         # TODO implement df data loading
         return df
