@@ -35,3 +35,6 @@ model/extensions/gridding_loss/gridding_distance.egg-info/
 runs
 config/__pycache__
 utils/paths_to_point_clouds_original.txt
+
+*__pycache__
+*__init__.py

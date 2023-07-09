@@ -257,7 +257,12 @@ class GRNet_comp(torch.nn.Module):
         completion_pred = self.dconv10(pt_features_32_r) + data
         # print(completion_pred.size())  # torch.Size([batch_size, 1, 64, 64, 64])
 
-        return completion_pred
+        skip = {
+            '32_r': pt_features_32_r,
+            '16_r': pt_features_16_r,
+            '8_r': pt_features_8_r
+        }
+        return completion_pred, skip
 
 class GRNet_clas(torch.nn.Module):
     def __init__(self):
@@ -284,18 +289,18 @@ class GRNet_clas(torch.nn.Module):
             torch.nn.Linear(1024, 15),
         )
 
-    def forward(self, data):
+    def forward(self, data, skip):
         completion_pred = data
         # print(completion_pred.size())  # torch.Size([batch_size, 1, 64, 64, 64])
         sparse_cloud = self.gridding_rev(completion_pred.squeeze(dim=1))
         #print(sparse_cloud.size())      # torch.Size([batch_size, 262144, 3])
         sparse_cloud = self.point_sampling(sparse_cloud)
         # print(sparse_cloud.size())      # torch.Size([batch_size, 2048, 3])
-        point_features_32 = self.feature_sampling(sparse_cloud, pt_features_32_r).view(-1, 2048, 256)
+        point_features_32 = self.feature_sampling(sparse_cloud, skip["32_r"]).view(-1, 2048, 256)
         # print(point_features_32.size()) # torch.Size([batch_size, 2048, 256])
-        point_features_16 = self.feature_sampling(sparse_cloud, pt_features_16_r).view(-1, 2048, 512)
+        point_features_16 = self.feature_sampling(sparse_cloud, skip["16_r"]).view(-1, 2048, 512)
         # print(point_features_16.size()) # torch.Size([batch_size, 2048, 512])
-        point_features_8 = self.feature_sampling(sparse_cloud, pt_features_8_r).view(-1, 2048, 1024)
+        point_features_8 = self.feature_sampling(sparse_cloud, skip["8_r"]).view(-1, 2048, 1024)
         # print(point_features_8.size())  # torch.Size([batch_size, 2048, 1024])
         point_features = torch.cat([point_features_32, point_features_16, point_features_8], dim=2)
         # print(point_features.size())    # torch.Size([batch_size, 2048, 1792])

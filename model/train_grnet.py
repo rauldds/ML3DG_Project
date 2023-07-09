@@ -6,10 +6,11 @@ from data_e3.shapenet import ShapeNet
 from model.grnet import GRNet_clas, GRNet_comp
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
-from model.extensions.chamfer_dist import ChamferDistance
+#from model.extensions.chamfer_dist import ChamferDistance
 import utils.data_loaders
 import os
 
+torch.autograd.set_detect_anomaly(True)
 
 def train(model_comp, model_clas, train_dataloader, val_dataloader,
           device, config):
@@ -82,6 +83,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
     tb = SummaryWriter()
     best_loss = 100
     for epoch in range(config['max_epochs']):
+        batch_loss = 0
         for batch_idx, batch in enumerate(train_dataloader):
             ScanObjectNNDataset.send_data_to_device(batch, device)
 
@@ -89,14 +91,23 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             cls_optim.zero_grad()
 
             if config["dataset"] =="Shapenet":
-                reconstruction = batch["incomplete_view"]
+                reconstruction, skip = model_comp(batch["incomplete_view"])
             else:
                 if config["train_mode"] == "classification":
                     reconstruction = batch["incomplete_view"]
-                    class_pred = model_clas(reconstruction.squeeze(dim=1))
+                    # TODO: IF YOU HAVE A BETTER ALTERNATIVE PLEASE CHANGE
+                    skip = {
+                        '32_r': torch.ones([config["batch_size"], 32, 32, 32, 32],device=device),
+                        '16_r': torch.ones([config["batch_size"], 64, 16, 16, 16],device=device),
+                        '8_r': torch.ones([config["batch_size"], 128, 8, 8, 8],device=device)
+                    }
+                    class_pred = model_clas(reconstruction,skip)
                 else:
-                    reconstruction = model_comp(batch["incomplete_view"])
-                    class_pred = model_clas(reconstruction.squeeze(dim=1))
+                    reconstruction, skip = model_comp(batch["incomplete_view"])
+                    # HAD TO DETACH TO STOP THE CLASS PREDICTION NETWORK TO TRY TO COMPUTE 
+                    # GRADIENTS ALL THE WAY BACK IN THE COMPLETION NETWORK
+                    skip_detached = {key: value.detach() for key, value in skip.items()}
+                    class_pred = model_clas(reconstruction.detach(),skip_detached)
 
             # TODO: understand the following mask:
             #  reconstruction[batch_val['input_sdf'][:, 1] == 1] = 0
@@ -114,7 +125,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             elif config["train_mode"] == "all":
                 loss_comp = completion_loss_criterion(reconstruction, target_sdf)
                 loss_class = classification_loss_criterion(class_pred,class_target)
-                loss = loss_comp + loss_class
+                loss = loss_class + loss_comp
+
             loss.backward()
 
             if config["train_mode"] == "completion":
@@ -130,6 +142,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 cls_scheduler.step()
 
             train_loss_running += loss.item()
+            batch_loss += loss.item()
             iteration = epoch * len(train_dataloader) + batch_idx
 
             tb.add_scalar("Train_Loss", train_loss_running, epoch)
@@ -137,25 +150,28 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
                 print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {train_loss_running / config["print_every_n"]:.6f}')
                 train_loss_running = 0.
+        
+        #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
+        batch_loss = batch_loss/len(train_dataloader)
+        #print(batch_loss)
+        #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
+        if epoch%config["save_freq"] == 0:
+            file_name = 'ckpt-best-' if batch_loss<best_loss else 'ckpt-epoch-%03d-' % epoch
+            file_name = file_name + config["train_mode"] + ".pth"
+            output_path = "./ckpts/"+config["dataset"]+"/"+file_name
+            torch.save({
+                'epoch_index': epoch,
+                'model_comp': model_comp.state_dict(),
+                'model_clas': model_clas.state_dict(),
+                'cmp_optim': cmp_optim.state_dict(),
+                'cls_optim': cls_optim.state_dict(),
+                'cmp_scheduler': cmp_scheduler.state_dict(),
+                'cls_scheduler': cls_scheduler.state_dict()
+            }, output_path)  # yapf: disable
 
-            #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
-            if epoch%config["save_freq"] == 0 or train_loss_running<best_loss:
-                file_name = 'ckpt-best-' if train_loss_running<best_loss else 'ckpt-epoch-%03d_' % epoch
-                file_name = file_name + config["train_mode"] + ".pth"
-                output_path = "./ckpts/"+config["dataset"]+"/"+file_name
-                torch.save({
-                    'epoch_index': epoch,
-                    'model_comp': model_comp.state_dict(),
-                    'model_clas': model_clas.state_dict(),
-                    'cmp_optim': cmp_optim.state_dict(),
-                    'cls_optim': cls_optim.state_dict(),
-                    'cmp_scheduler': cmp_scheduler.state_dict(),
-                    'cls_scheduler': cls_scheduler.state_dict()
-                }, output_path)  # yapf: disable
-
-                # print(f'Saved checkpoint to {output_path}')
-                if train_loss_running<best_loss:
-                    best_loss = train_loss_running
+            # print(f'Saved checkpoint to {output_path}')
+            if batch_loss<best_loss:
+                best_loss = batch_loss
 
 
 def main(config):

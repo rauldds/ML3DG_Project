@@ -12,8 +12,8 @@ if __name__ == "__main__":
     argParser.add_argument("-r", "--resume",
                            help="retrieve checkpoint", type=bool,
                            default=False)
-    argParser.add_argument("-r", "--dataset",
-                           help="retrieve checkpoint", type=str,
+    argParser.add_argument("-d", "--dataset",
+                           help="select dataset", type=str,
                            default="ScanObjectNN")
 
     args = argParser.parse_args()
