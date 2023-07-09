@@ -11,7 +11,6 @@ input_sdf_path = "/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/In
 
 
 model = GRNet_comp()
-#print(GRNet())
 model = model.cuda()
 
 optimizer = torch.optim.Adam(model.train_parameters())
@@ -36,10 +35,9 @@ voxels = torch.from_numpy(voxels).cuda()
 
 model.eval()
 
-recon, class_pred = model.forward(data=voxels)
+recon = model.forward(data=voxels)
 
 print(recon.shape)
-print(class_pred.shape)
 
 recon = recon.detach().cpu().numpy()
 
