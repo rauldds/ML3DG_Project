@@ -15,6 +15,8 @@ config = {
     'gamma': 0.5,
     'save_freq': 100
 }
-completion_layers = ["gridding", "conv1", "conv2", "conv3", "conv4", "fc5", "fc6",
-                     "dconv7","dconv8","dconv9", "dconv10", "gridding_rev"]
-classification_layers = ["point_sampling", "feature_sampling", "fc11", "fc12", "fc13", "fc14", "fc15"]
+completion_layers = ["conv1", "conv2", "conv3", "conv4", "fc5", "fc6",
+                     "dconv7","dconv8","dconv9", "dconv10"]
+classification_layers = ["gridding_rev", "point_sampling",
+                         "feature_sampling", "fc11", "fc12",
+                         "fc13", "fc14", "fc15"]
