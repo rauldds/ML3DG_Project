@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from utils.data_loaders import ScanObjectNNDataset
 from data_e3.shapenet import ShapeNet
-from model.grnet import GRNet_clas, GRNet_comp
+from model.grnet import GRNet_clas, GRNet_comp, Shapenet_comp
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
 #from model.extensions.chamfer_dist import ChamferDistance
@@ -215,7 +215,16 @@ def main(config):
     model_comp.to(device)
     model_clas = GRNet_clas()
     model_clas.to(device)
+    model_shapenet_comp = Shapenet_comp()
+    model_shapenet_comp.to(device)
 
+    if config["dataset"] == "Shapenet":
+        train(model_comp=model_shapenet_comp,
+          model_clas=model_clas,
+          train_dataloader=train_dataloader,
+          device=device,
+          config=config,
+          val_dataloader=None)
     train(model_comp=model_comp,
           model_clas=model_clas,
           train_dataloader=train_dataloader,

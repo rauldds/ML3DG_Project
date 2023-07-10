@@ -32,6 +32,7 @@ class ShapeNet(torch.utils.data.Dataset):
         # TODO Log-scale target df
         input_sdf = np.clip(input_sdf, -3, 3)
         target_df = np.clip(target_df, -3, 3)
+        input_sdf = input_sdf[np.newaxis, ...]
         #input_sdf = input_sdf.astype(np.float32)
         #target_df = target_df.astype(np.float32)
 
@@ -73,3 +74,5 @@ class ShapeNet(torch.utils.data.Dataset):
         df = df.reshape((dimX, dimY, dimZ))
         # TODO implement df data loading
         return df
+my_dataset = ShapeNet("overfit")
+print(my_dataset[0]["target_sdf"].shape)

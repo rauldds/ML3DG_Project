@@ -316,3 +316,83 @@ class GRNet_clas(torch.nn.Module):
         # print(class_pred.size())    # torch.Size([batch_size, 15])
 
         return class_pred
+
+
+class Shapenet_comp(torch.nn.Module):
+    def __init__(self):
+        super(Shapenet_comp, self).__init__()
+        self.conv1 = torch.nn.Sequential(
+            torch.nn.Conv3d(1, 32, kernel_size=4, padding=1),
+            torch.nn.BatchNorm3d(32),
+            torch.nn.LeakyReLU(0.2),
+            torch.nn.Dropout(),
+            torch.nn.MaxPool3d(kernel_size=2)
+        )
+        self.conv2 = torch.nn.Sequential(
+            torch.nn.Conv3d(32, 64, kernel_size=4, padding=1),
+            torch.nn.BatchNorm3d(64),
+            torch.nn.LeakyReLU(0.2),
+            torch.nn.Dropout(),
+            torch.nn.MaxPool3d(kernel_size=2)
+        )
+        self.conv3 = torch.nn.Sequential(
+            torch.nn.Conv3d(64, 128, kernel_size=4, padding=1),
+            torch.nn.BatchNorm3d(128),
+            torch.nn.LeakyReLU(0.2),
+            torch.nn.Dropout(),
+            torch.nn.MaxPool3d(kernel_size=2)
+        )
+        self.conv4 = torch.nn.Sequential(
+            torch.nn.Conv3d(128, 256, kernel_size=4, padding=1),
+            torch.nn.BatchNorm3d(256),
+            torch.nn.LeakyReLU(0.2),
+            torch.nn.Dropout(),
+            torch.nn.MaxPool3d(kernel_size=2)
+        )
+        self.fc5 = torch.nn.Sequential(
+            torch.nn.Linear(1024, 2048),
+            torch.nn.ReLU(),
+            torch.nn.Dropout()
+        )
+        self.fc6 = torch.nn.Sequential(
+            torch.nn.Linear(2048, 1024),
+            torch.nn.ReLU(),
+            torch.nn.Dropout()
+        )
+        self.dconv7 = torch.nn.Sequential(
+            torch.nn.ConvTranspose3d(256, 128, kernel_size=4, stride=2, bias=False, padding=1),
+            torch.nn.BatchNorm3d(128),
+            torch.nn.ReLU()
+        )
+        self.dconv8 = torch.nn.Sequential(
+            torch.nn.ConvTranspose3d(128, 64, kernel_size=4, stride=2, bias=False, padding=1),
+            torch.nn.BatchNorm3d(64),
+            torch.nn.ReLU()
+        )
+        self.dconv9 = torch.nn.Sequential(
+            torch.nn.ConvTranspose3d(64, 32, kernel_size=4, stride=2, bias=False, padding=1),
+            torch.nn.BatchNorm3d(32),
+            torch.nn.ReLU()
+        )
+        self.dconv10 = torch.nn.Sequential(
+            torch.nn.ConvTranspose3d(32, 1, kernel_size=4, stride=2, bias=False, padding=1),
+            torch.nn.BatchNorm3d(1),
+            torch.nn.ReLU()
+        )
+
+    def forward(self, data):
+        pt_features_32_l = self.conv1(data)
+        pt_features_16_l = self.conv2(pt_features_32_l)
+        pt_features_8_l = self.conv3(pt_features_16_l)
+        pt_features_4_l = self.conv4(pt_features_8_l)
+        print(pt_features_4_l.shape)
+        features = self.fc5(pt_features_4_l.view(-1, 1024))
+        pt_features_4_r = self.fc6(features).view(-1, 256, 1, 1, 1) + pt_features_4_l
+        print(pt_features_8_l.shape)
+        print(self.dconv7(pt_features_4_r).shape)
+        pt_features_8_r = self.dconv7(pt_features_4_r) + pt_features_8_l
+        pt_features_16_r = self.dconv8(pt_features_8_r) + pt_features_16_l
+        pt_features_32_r = self.dconv9(pt_features_16_r) + pt_features_32_l
+        completion_pred = self.dconv10(pt_features_32_r) + data
+
+        return completion_pred

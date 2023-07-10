@@ -19,7 +19,7 @@ mesh_input_pointcloud_path = "./results/mesh_input_cloud.obj"
 watertight_mesh_path = "./results/mesh_input_cloud_watertight.obj"
 
 #ONLY PATH THAT HAS TO BE MODIFIED
-OUTPUT_DATASET_PATH = "/home/rauldds/Documents"
+OUTPUT_DATASET_PATH = "/media/davidg-dl/Second SSD/"
 
 
 def generate_incomplete_view(scan):
