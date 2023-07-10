@@ -49,10 +49,10 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
                                                                   view_id=view_id)
         truncated_incomplete_view = ScanObjectNNDataset.truncate_sdf(incomplete_view)
 
-        # target_class = np.zeros((1,15),np.float32)
-        # target_class[0,CLASS_MAP[class_name]] = 1.0
+        target_class = np.zeros((15,),np.float32)
+        target_class[CLASS_MAP[class_name]] = 1.0
 
-        target_class = CLASS_MAP[class_name]
+        #target_class = CLASS_MAP[class_name]
 
         return {
             "target_sdf": truncated_sdf,
