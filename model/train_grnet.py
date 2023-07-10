@@ -46,6 +46,9 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
     model_params += model_comp.parameters()
     model_params += model_clas.parameters()
 
+    weight_CE = torch.tensor(0.5, requires_grad=True)
+    weight_L1 = torch.tensor(0.5, requires_grad=True)
+
     cmp_optim = torch.optim.Adam(model_comp.parameters(),
                                  lr=config['learning_rate'],
                                  weight_decay=config['weight_decay'],
@@ -126,7 +129,10 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             elif config["train_mode"] == "all":
                 loss_comp = completion_loss_criterion(reconstruction, target_sdf)
                 loss_class = classification_loss_criterion(class_pred,class_target)
-                loss = loss_class + loss_comp
+
+                scaled_loss_CE = weight_CE * loss_class
+                scaled_loss_comp = weight_L1 * loss_comp
+                loss = scaled_loss_CE + scaled_loss_comp
 
             loss.backward()
 
@@ -141,6 +147,11 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 cmp_scheduler.step()
                 cls_optim.step()
                 cls_scheduler.step()
+
+                weight_CE -= config['learning_rate'] * weight_CE.grad.data
+                weight_L1 -= config['learning_rate'] * weight_L1.grad.data
+                weight_L1.grad.data.zero()
+                weight_CE.grad.data.zero()
 
             train_loss_running += loss.item()
             batch_loss += loss.item()
@@ -167,7 +178,9 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 'cmp_optim': cmp_optim.state_dict(),
                 'cls_optim': cls_optim.state_dict(),
                 'cmp_scheduler': cmp_scheduler.state_dict(),
-                'cls_scheduler': cls_scheduler.state_dict()
+                'cls_scheduler': cls_scheduler.state_dict(),
+                "weight_CE": weight_CE,
+                "weight_L1:": weight_L1
             }, output_path)  # yapf: disable
 
             # print(f'Saved checkpoint to {output_path}')
