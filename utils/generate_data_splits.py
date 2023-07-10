@@ -1,8 +1,4 @@
-"""
-Description: This script reads the lines from an original output file and splits
-them into different subsets based on predefined percentages. It creates separate output
-files for the train, validation, test, and overfit splits.
-"""
+import random
 from pathlib import Path
 
 # Specify the paths to GT and InputData directories
@@ -14,8 +10,7 @@ train_split = 0.7  # 70% for training
 val_split = 0.20  # 20% for validation
 test_split = 0.10  # 10% for testing
 
-# Define the number of samples for the overfit split first number
-# represents the number of samples second is by default the number of views
+# Define the number of samples for the overfit split
 overfit_samples = 2 * 7
 
 # Open the original output file
@@ -23,6 +18,9 @@ original_output_path = Path("output.txt")
 with open(original_output_path, "r") as original_output_file:
     # Read the lines from the original output file
     lines = original_output_file.readlines()
+
+    # Shuffle the lines randomly
+    random.shuffle(lines)
 
     # Calculate the number of samples for each split
     total_samples = len(lines)
@@ -32,8 +30,13 @@ with open(original_output_path, "r") as original_output_file:
 
     # Split the lines into train, val, and test lists
     train_lines = lines[:train_samples]
-    val_lines = lines[train_samples : train_samples + val_samples]
-    test_lines = lines[train_samples + val_samples :]
+    val_lines = lines[train_samples: train_samples + val_samples]
+    test_lines = lines[train_samples + val_samples:]
+
+    # Shuffle the lines within each split
+    random.shuffle(train_lines)
+    random.shuffle(val_lines)
+    random.shuffle(test_lines)
 
     # Create the train split file
     train_output_path = Path("train.txt")
@@ -54,7 +57,7 @@ with open(original_output_path, "r") as original_output_file:
     overfit_output_path = Path("overfit.txt")
     with open(overfit_output_path, "w") as overfit_output_file:
         # Choose the specified number of samples for the overfit split
-        overfit_lines = lines[:overfit_samples]
+        overfit_lines = random.sample(lines, overfit_samples)
         overfit_output_file.writelines(overfit_lines)
 
 print("Splitting completed.")
