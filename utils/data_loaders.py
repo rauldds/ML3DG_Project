@@ -71,7 +71,7 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
     @staticmethod
     def get_incomplete_view(dataset_path, class_name, shape_id, view_id):
         # Load the corresponding incomplete view for the current shape_id
-        path = (dataset_path + "InputData/SDFs/" + class_name + f"/{shape_id}/" + f"{view_id}.npz")
+        path = (dataset_path + "InputSamples/SDFs/" + class_name + f"/{shape_id}/" + f"{view_id}.npz")
         data = np.load(path)
         incomplete_view = data["arr_0"]
         incomplete_view = incomplete_view[np.newaxis,  ...]
