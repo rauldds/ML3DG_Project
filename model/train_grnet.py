@@ -177,7 +177,9 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 'cmp_optim': cmp_optim.state_dict(),
                 'cls_optim': cls_optim.state_dict(),
                 'cmp_scheduler': cmp_scheduler.state_dict(),
-                'cls_scheduler': cls_scheduler.state_dict()
+                'cls_scheduler': cls_scheduler.state_dict(),
+                "weight_CE": weight_CE,
+                "weight_L1:": weight_L1
             }, output_path)  # yapf: disable
 
             # print(f'Saved checkpoint to {output_path}')
