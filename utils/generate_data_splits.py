@@ -2,8 +2,10 @@ import random
 from pathlib import Path
 
 # Specify the paths to GT and InputData directories
-gt_path = Path('/media/davidg-dl/Second SSD/DATASET_test/GT/SDFs')
-input_data_path = Path("/media/davidg-dl/Second SSD/DATASET_test/InputData/SDFs")
+# gt_path = Path('/media/davidg-dl/Second SSD/DATASET_test/GT/SDFs')
+gt_path = Path('/media/davidg-dl/Second SSD/CompleteDataset/GT/SDFs')
+input_data_path = Path('/media/davidg-dl/Second SSD/CompleteDataset/InputData/SDFs')
+# input_data_path = Path("/media/davidg-dl/Second SSD/DATASET_test/InputData/SDFs")
 
 # Define the split percentages
 train_split = 0.7  # 70% for training
@@ -11,10 +13,10 @@ val_split = 0.20  # 20% for validation
 test_split = 0.10  # 10% for testing
 
 # Define the number of samples for the overfit split
-overfit_samples = 2 * 7
+overfit_samples = 10 * 7
 
 # Open the original output file
-original_output_path = Path("output.txt")
+original_output_path = Path("output-final.txt")
 with open(original_output_path, "r") as original_output_file:
     # Read the lines from the original output file
     lines = original_output_file.readlines()
