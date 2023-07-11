@@ -25,11 +25,13 @@ the expected format for correct results.
 from pathlib import Path
 
 # Specify the paths to GT and InputData directories
-gt_path = Path('/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/GT/SDFs')
-input_data_path = Path("/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/InputData/SDFs")
+# gt_path = Path('/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/GT/SDFs')
+gt_path = Path('/media/davidg-dl/Second SSD/CompleteDataset/GT/SDFs')
+# input_data_path = Path("/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/InputData/SDFs")
+input_data_path = Path('/media/davidg-dl/Second SSD/CompleteDataset/InputData/SDFs')
 
 # Open the output file in write mode
-output_file_path = Path("output.txt")
+output_file_path = Path("output-final.txt")
 with open(output_file_path, "w") as output_file:
     # Iterate over each class directory in GT
     for class_dir in gt_path.iterdir():
