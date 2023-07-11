@@ -9,7 +9,7 @@ input_sdf_path = "/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/In
 model = GRNet_clas()
 model = model.cuda()
 
-optimizer = torch.optim.Adam(model.train_parameters())
+optimizer = torch.optim.Adam(model.parameters())
 
 checkpoint = torch.load("./ckpts/ScanObjectNN/ckpt-best-classification.pth")
 

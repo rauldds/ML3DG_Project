@@ -42,10 +42,6 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 ckpt["cmp_optim"] = cmp_optim_dict
                 ckpt["cmp_scheduler"] = cmp_scheduler_dict
 
-    model_params = []
-    model_params += model_comp.parameters()
-    model_params += model_clas.parameters()
-
     weight_CE = torch.tensor(0.5, requires_grad=True)
     weight_L1 = torch.tensor(0.5, requires_grad=True)
 

@@ -76,6 +76,10 @@ Once the completion model is trained, you can visualize how well it performs by 
 ```
 python3 -m inference.object_completion
 ```
+Once the classification model is trained, you can check how well it performs by simply running: 
+```
+python3 -m inference.object_classification
+```
 Notes: You have to modify the path of the dataset in this script. Probably would be a good idea to pass the dataset as an argument.
 
 

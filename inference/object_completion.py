@@ -7,15 +7,15 @@ import skimage
 import trimesh
 import open3d as o3d
 
-input_sdf_path = "/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/InputData/SDFs/pillow/scene0577_00_00016/0_scene0577_00_00016.npz"
+input_sdf_path = "/home/rauldds/Documents/InputSamples/SDFs/table/scene0507_00_00005/4_scene0507_00_00005.npz"
 
 
 model = GRNet_comp()
 model = model.cuda()
 
-optimizer = torch.optim.Adam(model.train_parameters())
+optimizer = torch.optim.Adam(model.parameters())
 
-checkpoint = torch.load("./ckpts/ckpt-best-completion.pth")
+checkpoint = torch.load("./ckpts/ScanObjectNN/ckpt-best-completion.pth")
 
 model.load_state_dict(checkpoint['model_comp'])
 
@@ -35,7 +35,7 @@ voxels = torch.from_numpy(voxels).cuda()
 
 model.eval()
 
-recon = model.forward(data=voxels)
+recon, skip = model.forward(data=voxels)
 
 print(recon.shape)
 
