@@ -161,7 +161,64 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
                 print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {train_loss_running / config["print_every_n"]:.6f}')
                 train_loss_running = 0.
-        
+
+            # Validation
+            if iteration % config['validate_every_n'] == (config['validate_every_n'] - 1):
+                if config["train_mode"] == "completion":
+                    model_comp.eval()
+                elif config["train_mode"] == "classification":
+                    model_clas.eval()
+                elif config["train_mode"] == "all":
+                    model_comp.eval()
+                    model_clas.eval()
+
+                val_loss = 0.
+
+                for batch_val in val_dataloader:
+                    ScanObjectNNDataset.send_data_to_device(batch_val, device)
+
+                    with torch.no_grad():
+                        reconstruction, skip = model_comp(batch_val["incomplete_view"])
+                        # print(f"Reconstruction @val shape: {reconstruction.shape}")
+                        # print(f"batch_val[incomplete_view] shape: {b.shape}")
+
+                        target_sdf = batch_val["target_sdf"]
+                        if config["dataset"] != "Shapenet":
+                            class_target = batch_val["class"]
+                        reconstruction[batch_val["incomplete_view"] > 0] = 0
+                        target_sdf[batch_val["incomplete_view"] > 0] = 0
+
+                        if config["train_mode"] == "completion":
+                            loss = completion_loss_criterion(reconstruction, target_sdf)
+                        elif config["train_mode"] == "classification":
+                            loss = classification_loss_criterion(class_pred, class_target)
+                        elif config["train_mode"] == "all":
+                            loss_comp = completion_loss_criterion(reconstruction, target_sdf)
+                            loss_class = classification_loss_criterion(class_pred, class_target)
+
+                            scaled_loss_CE = weight_CE * loss_class
+                            scaled_loss_comp = weight_L1 * loss_comp
+                            loss = scaled_loss_CE + scaled_loss_comp
+
+                    val_loss += loss.item()
+
+                print(f'[{epoch:03d}/{batch_idx:05d}] val_loss: {val_loss:.6f}')
+
+                if config["train_mode"] == "completion":
+                    model_comp.train()
+                    model_clas.eval()
+                elif config["train_mode"] == "classification":
+                    model_comp.eval()
+                    model_clas.train()
+                elif config["train_mode"] == "all":
+                    model_comp.train()
+                    model_clas.train()
+
+
+                tb.add_scalar("Val_Loss", val_loss, epoch)
+
+
+
         #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
         batch_loss = batch_loss/len(train_dataloader)
         #print(batch_loss)
@@ -185,6 +242,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             # print(f'Saved checkpoint to {output_path}')
             if batch_loss<best_loss:
                 best_loss = batch_loss
+
+
 
 
 def main(config):
@@ -211,6 +270,14 @@ def main(config):
         pin_memory=True,  # This is an implementation detail to speed up data uploading to the GPU
     )
 
+    val_dataset = ScanObjectNNDataset('val')
+    val_dataloader = torch.utils.data.DataLoader(
+        val_dataset,
+        batch_size=config['batch_size_val'],
+        num_workers=config['num_workers'],
+        pin_memory=True
+    )
+
     model_comp = GRNet_comp()
     model_comp.to(device)
     model_clas = GRNet_clas()
@@ -221,4 +288,4 @@ def main(config):
           train_dataloader=train_dataloader,
           device=device,
           config=config,
-          val_dataloader=None)
+          val_dataloader=val_dataloader)

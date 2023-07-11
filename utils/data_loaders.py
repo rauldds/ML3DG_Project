@@ -16,12 +16,13 @@ class DatasetSubset(Enum):
 
 class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
     # TODO: Update path
-    # DATASET_PATH = '/media/davidg-dl/Second SSD/DATASET_test/'
-    DATASET_PATH = '/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/'
+    DATASET_PATH = '/media/davidg-dl/Second SSD/CompleteDataset/'
+    # DATASET_PATH = '/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/'
 
     #TODO: how many of the original implementations do we need? need to figure it out when testing in the train loop
     def __init__(self, split, options=None, file_list =None, transforms=None):
         assert split in ['train', 'val', 'overfit']
+        print(f"Using split: {split}")
 
         # Read the lines from the split or overfit file and separate view, sample, and class elements
         with open(f"./utils/{split}.txt", "r") as file:
