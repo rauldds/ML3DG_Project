@@ -32,6 +32,8 @@ voxels = torch.from_numpy(voxels).cuda()
 model.eval()
 
 cls = model.forward(data=voxels)
+sftmx = torch.nn.Softmax(0)
+cls = sftmx(cls)
 
 print(cls.shape)
 

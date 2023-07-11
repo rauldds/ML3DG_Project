@@ -17,7 +17,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
 
     completion_loss_criterion = torch.nn.SmoothL1Loss()
     completion_loss_criterion.to(device)
-    classification_loss_criterion = torch.nn.CrossEntropyLoss()
+    classification_loss_criterion = torch.nn.BCEWithLogitsLoss()
     classification_loss_criterion.to(device)
 
     if config["resume"]:
@@ -118,6 +118,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             target_sdf = batch["target_sdf"]
             if config["dataset"] !="Shapenet":
                 class_target = batch["class"]
+                #class_target = class_target.long()
             reconstruction[batch["incomplete_view"] > 0] = 0
             target_sdf[batch["incomplete_view"] > 0] = 0
             

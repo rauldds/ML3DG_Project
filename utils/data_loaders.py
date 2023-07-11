@@ -50,10 +50,10 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
                                                                   view_id=view_id)
         truncated_incomplete_view = ScanObjectNNDataset.truncate_sdf(incomplete_view)
 
-        # target_class = np.zeros((1,15),np.float32)
-        # target_class[0,CLASS_MAP[class_name]] = 1.0
+        target_class = np.zeros((15,),np.float32)
+        target_class[CLASS_MAP[class_name]] = 1.0
 
-        target_class = CLASS_MAP[class_name]
+        #target_class = CLASS_MAP[class_name]
 
         return {
             "target_sdf": truncated_sdf,
@@ -72,7 +72,7 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
     @staticmethod
     def get_incomplete_view(dataset_path, class_name, shape_id, view_id):
         # Load the corresponding incomplete view for the current shape_id
-        path = (dataset_path + "InputData/SDFs/" + class_name + f"/{shape_id}/" + f"{view_id}.npz")
+        path = (dataset_path + "InputSamples/SDFs/" + class_name + f"/{shape_id}/" + f"{view_id}.npz")
         data = np.load(path)
         incomplete_view = data["arr_0"]
         incomplete_view = incomplete_view[np.newaxis,  ...]

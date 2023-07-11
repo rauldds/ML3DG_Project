@@ -42,6 +42,8 @@ In /examples you can find a few scripts that show how we generate incomplete ver
 To train the model we use TSDF representations of [ScanObjectNN](https://hkust-vgd.github.io/scanobjectnn/). To generate our version of the dataset simply follow the next steps: (DAVID DESCRIBES HERE ALL THE STEPS TO GENERATE THE DATASET)
 
 ## Training
+
+### Completion and Classification
 To start training the completion part of the model simply run:
 ```
 python3 -m src.train_runner -tr completion
@@ -62,6 +64,12 @@ Notes:
 - If you want to try overfitting/train completion with shapenet the `shapenet.py` script in data_e3 has to be updated with complete functions. Additionally, the dataset sign and distance value doesn't have to be separated and probably we wouldn't have to use the LOG SCALING. Once that is done, training completion with shapenet should be possible with `--dataset Shapenet`
 - SHOULD WE ALSO DO THE LOG SCALING AS IN EXERCISE 3?
 
+### Color completion
+To start training the color net of the model simply run:
+```sh
+python3 -m model.train_runner -dp <DATASET PATH>
+```
+In the dataloader modify the split that is being used accordingly.
 
 ## Inference
 Once the completion model is trained, you can visualize how well it performs by simply running: 
