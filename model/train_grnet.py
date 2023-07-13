@@ -232,11 +232,11 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
 
 
         #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
-        batch_loss = batch_loss/len(train_dataloader)
+        val_loss /= len(val_dataloader)
         #print(batch_loss)
         #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
-        if epoch%config["save_freq"] == 0:
-            file_name = 'ckpt-best-' if batch_loss<best_loss else 'ckpt-epoch-%03d-' % epoch
+        if epoch % config["save_freq"] == 0:
+            file_name = 'ckpt-best-' if val_loss < best_loss else 'ckpt-epoch-%03d-' % epoch
             file_name = file_name + config["train_mode"] + ".pth"
             output_path = "./ckpts/"+config["dataset"]+"/"+file_name
             torch.save({
@@ -252,8 +252,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             }, output_path)  # yapf: disable
 
             # print(f'Saved checkpoint to {output_path}')
-            if batch_loss<best_loss:
-                best_loss = batch_loss
+            if val_loss < best_loss:
+                best_loss = val_loss
 
 
 
