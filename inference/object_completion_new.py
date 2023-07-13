@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 import numpy as np
 import torch
@@ -10,25 +11,27 @@ import open3d as o3d
 samples_directory = '/media/davidg-dl/Second SSD/CompleteDataset/InputSamples/SDFs/'
 
 # Define the path to the text file containing the sample information
-sample_info_file = './utils/val.txt'
+sample_info_file = './utils/test.txt'
 
 # Specify the number of samples you want to visualize
-num_samples_to_visualize = 5
+num_samples_to_visualize = 10
 
 # Load the sample information from the text file
 sample_info = np.genfromtxt(sample_info_file, dtype=str)
 
+# Randomly select sample indices without replacement
+sample_indices = random.sample(range(len(sample_info)), num_samples_to_visualize)
+
 # Create a list to store the paths of the samples
 sample_paths = []
 
-# Iterate through the sample information and construct the sample paths
-for i in range(num_samples_to_visualize):
-    _, sample_name, class_name = sample_info[i]
+# Iterate through the randomly selected sample indices and construct the sample paths
+for index in sample_indices:
+    _, sample_name, class_name = sample_info[index]
     class_name = class_name.lower()
     sample_path = Path(samples_directory) / class_name / sample_name / f'2_{sample_name}.npz'
     sample_paths.append(sample_path)
 
-print(sample_paths)
 # Instantiate the GRNet model and move it to the GPU
 model = GRNet_comp()
 model = model.cuda()
@@ -38,8 +41,7 @@ optimizer = torch.optim.Adam(model.parameters())
 checkpoint = torch.load("./ckpts/ScanObjectNN/ckpt-best-completion.pth")
 model.load_state_dict(checkpoint['model_comp'])
 optimizer.load_state_dict(checkpoint['cmp_optim'])
-print("success loading")
-
+print("Success loading model checkpoint.")
 
 # Loop through the sample paths and visualize each sample
 for sample_path in sample_paths:
@@ -51,7 +53,6 @@ for sample_path in sample_paths:
     print(voxels.shape)
     voxels = torch.from_numpy(voxels).cuda()
     model.eval()
-
 
     # Perform the inference
     with torch.no_grad():
@@ -66,10 +67,10 @@ for sample_path in sample_paths:
     mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_normals=normals)
 
     # Convert the mesh to Open3D mesh
-    mesh = mesh.as_open3d
+    mesh_o3d = mesh.as_open3d
 
     # Visualize the mesh
-    o3d.visualization.draw_geometries([mesh],
+    o3d.visualization.draw_geometries([mesh_o3d],
                                       zoom=0.664,
                                       front=[-0.4761, -0.4698, -0.7434],
                                       lookat=[0, 0, 0],
