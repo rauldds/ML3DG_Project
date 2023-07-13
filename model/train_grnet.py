@@ -185,6 +185,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_clas.eval()
 
                 val_loss = 0.
+                print("[INFO] Validating")
 
                 for batch_val in val_dataloader:
                     ScanObjectNNDataset.send_data_to_device(batch_val, device)
@@ -197,8 +198,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                         target_sdf = batch_val["target_sdf"]
                         if config["dataset"] != "Shapenet":
                             class_target = batch_val["class"]
-                        reconstruction[batch_val["incomplete_view"] > 0] = 0
-                        target_sdf[batch_val["incomplete_view"] > 0] = 0
+                        # reconstruction[batch_val["incomplete_view"] > 0] = 0
+                        # target_sdf[batch_val["incomplete_view"] > 0] = 0
 
                         if config["train_mode"] == "completion":
                             loss = completion_loss_criterion(reconstruction, target_sdf)
@@ -250,6 +251,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                         "weight_CE": weight_CE,
                         "weight_L1:": weight_L1
                     }, output_path)  # yapf: disable
+                    print("[INFO] saved new model parameters")
 
                     # print(f'Saved checkpoint to {output_path}')
                     if val_loss < best_loss:

@@ -8,7 +8,7 @@ config = {
     'learning_rate': 2e-3,
     'weight_decay': 1e-4,
     'betas': (.9, .999),
-    'max_epochs': 50,
+    'max_epochs': 400,
     'print_every_n': 5,
     'validate_every_n': 1000,
     'milestones':[50],
