@@ -22,8 +22,8 @@ class log_space_L1_loss(torch.nn.Module):
 
         loss = torch.abs(torch.abs(reconstruction) - target_log)
 
-        sign_mask = torch.sign(reconstruction) * torch.sign(target) < 0
-        loss = torch.where(sign_mask, 2 * loss, loss)
+        # sign_mask = torch.sign(reconstruction) * torch.sign(target) < 0
+        # loss = torch.where(sign_mask, 2 * loss, loss)
 
         return torch.mean(loss)
 def train(model_comp, model_clas, train_dataloader, val_dataloader,
@@ -171,7 +171,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
                 tb.add_scalar("Train_Loss",
                               train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0]), epoch)
-                print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0])):.6f}')
+                print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"])):.6f}')
                 train_loss_running = 0.
 
             # Validation
@@ -228,7 +228,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_clas.train()
 
 
-                tb.add_scalar("Val_Loss", val_loss/(batch_val["incomplete_view"].shape[0] * len(val_dataloader)), epoch)
+                tb.add_scalar("Val_Loss", val_loss/(len(val_dataloader)), epoch)
 
 
 
