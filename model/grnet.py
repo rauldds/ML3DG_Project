@@ -279,14 +279,34 @@ class GRNet_clas(torch.nn.Module):
             torch.nn.ReLU()
         )
         self.fc13 = torch.nn.Sequential(
-            torch.nn.Linear(448, 112),
+            torch.nn.Linear(448, 100),
             torch.nn.ReLU()
         )
-        self.fc14 = torch.nn.Linear(112, 10)
-        self.fc15 = torch.nn.Sequential(
-            torch.nn.Linear(20480, 1024),
+        self.fc14 = torch.nn.Sequential(
+            torch.nn.Conv1d(2048, 1024, kernel_size=3, padding=1),
+            torch.nn.BatchNorm1d(1024),
             torch.nn.ReLU(),
-            torch.nn.Linear(1024, 15),
+            torch.nn.Dropout(),
+            torch.nn.Conv1d(1024, 512, kernel_size=3, padding=1),
+            torch.nn.BatchNorm1d(512),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(),
+            torch.nn.Conv1d(512, 128, kernel_size=3, padding=1),
+            torch.nn.BatchNorm1d(128),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(),
+            torch.nn.Conv1d(128, 32, kernel_size=3, padding=1),
+            torch.nn.BatchNorm1d(32),
+            torch.nn.ReLU(),
+            torch.nn.Dropout()
+        )
+        self.fc15 = torch.nn.Sequential(
+            torch.nn.Linear(3200, 512),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(),
+            torch.nn.Linear(512,128),
+            torch.nn.ReLU(),
+            torch.nn.Linear(128,15)
         )
 
     def forward(self, data, skip):
@@ -309,9 +329,9 @@ class GRNet_clas(torch.nn.Module):
         point_features = self.fc12(point_features)
         # print(point_features.size())    # torch.Size([batch_size, 2048, 448])
         point_features = self.fc13(point_features)
-        # print(point_features.size())    # torch.Size([batch_size, 2048, 112])
+        # print(point_features.size())    # torch.Size([batch_size, 2048, 100])
         point_features = self.fc14(point_features)
-        # print(point_features.size())    # torch.Size([batch_size, 2048, 10])
+        # print(point_features.size())    # torch.Size([batch_size, 32, 100])
         class_pred = self.fc15(point_features.flatten(start_dim=1))
         # print(class_pred.size())    # torch.Size([batch_size, 15])
 

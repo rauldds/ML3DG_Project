@@ -7,7 +7,7 @@ import skimage
 import trimesh
 import open3d as o3d
 
-input_sdf_path = "/home/rauldds/Documents/InputSamples/SDFs/table/scene0507_00_00005/4_scene0507_00_00005.npz"
+input_sdf_path = "/media/rauldds/TOSHIBA EXT/ML3G/Full_Project_Dataset/InputSamples/SDFs/table/272_00004/4_272_00004.npz"
 
 
 model = GRNet_comp()
