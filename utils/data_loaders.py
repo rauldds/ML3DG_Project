@@ -16,8 +16,8 @@ class DatasetSubset(Enum):
 
 class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
     # TODO: Update path
-    DATASET_PATH = '/media/davidg-dl/Second SSD/CompleteDataset/'
-    # DATASET_PATH = '/media/rauldds/TOSHIBA EXT/ML3G/Davids targets/DATASET_test/'
+    # DATASET_PATH = '/media/davidg-dl/Second SSD/CompleteDataset/'
+    DATASET_PATH = '/media/rauldds/TOSHIBA EXT/ML3G/Full_Project_Dataset/'
 
     #TODO: how many of the original implementations do we need? need to figure it out when testing in the train loop
     def __init__(self, split, options=None, file_list =None, transforms=None):
@@ -64,7 +64,10 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
     @staticmethod
     def get_target_sdf(dataset_path, class_name, shape_id):
         # Loading the SDFs stored as npz
-        data = np.load(dataset_path+ 'GT/SDFs/' + class_name + f"/{shape_id}.bin.npz")
+        #print(dataset_path)
+        #print(class_name)
+        #print(shape_id)
+        data = np.load(dataset_path+ 'GT/SDFs/' + class_name + f"/{shape_id}.bin.npz", allow_pickle=True)
         target_sdf = data["arr_0"]
         target_sdf = target_sdf[np.newaxis, ...]
         return target_sdf
@@ -73,7 +76,7 @@ class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
     def get_incomplete_view(dataset_path, class_name, shape_id, view_id):
         # Load the corresponding incomplete view for the current shape_id
         path = (dataset_path + "InputSamples/SDFs/" + class_name + f"/{shape_id}/" + f"{view_id}.npz")
-        data = np.load(path)
+        data = np.load(path, allow_pickle=True)
         incomplete_view = data["arr_0"]
         incomplete_view = incomplete_view[np.newaxis,  ...]
         return incomplete_view

@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from utils.data_loaders import ScanObjectNNDataset
 from data_e3.shapenet import ShapeNet
 from model.grnet import GRNet_clas, GRNet_comp
+import skimage
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
 #from model.extensions.chamfer_dist import ChamferDistance
@@ -70,9 +71,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                                  lr=config['learning_rate'],
                                  weight_decay=config['weight_decay'],
                                  betas=config["betas"])
-    cls_scheduler = torch.optim.lr_scheduler.MultiStepLR(cls_optim, 
-                                                         milestones = config["milestones"],
-                                                         gamma = config["gamma"])
+    cls_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(cls_optim, min_lr=1e-10)
 
     
     if config["train_mode"] == "completion":
@@ -149,15 +148,11 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
 
             if config["train_mode"] == "completion":
                 cmp_optim.step()
-                cmp_scheduler.step()
             elif config["train_mode"] == "classification":
                 cls_optim.step()
-                cls_scheduler.step()
             elif config["train_mode"] == "all":
                 cmp_optim.step()
                 cmp_scheduler.step()
-                cls_optim.step()
-                cls_scheduler.step()
 
                 weight_CE -= config['learning_rate'] * weight_CE.grad.data
                 weight_L1 -= config['learning_rate'] * weight_L1.grad.data
@@ -191,9 +186,44 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     ScanObjectNNDataset.send_data_to_device(batch_val, device)
 
                     with torch.no_grad():
-                        reconstruction, skip = model_comp(batch_val["incomplete_view"])
-                        # print(f"Reconstruction @val shape: {reconstruction.shape}")
-                        # print(f"batch_val[incomplete_view] shape: {b.shape}")
+                        if config["dataset"] =="Shapenet":
+                            reconstruction, skip = model_comp(batch_val["incomplete_view"])
+                        else:
+                            if config["train_mode"] == "classification":
+                                reconstruction = batch_val["target_sdf"]
+                                # TODO: IF YOU HAVE A BETTER ALTERNATIVE PLEASE CHANGE
+                                skip = {
+                                    '32_r': torch.ones([config["batch_size"], 32, 32, 32, 32],device=device),
+                                    '16_r': torch.ones([config["batch_size"], 64, 16, 16, 16],device=device),
+                                    '8_r': torch.ones([config["batch_size"], 128, 8, 8, 8],device=device)
+                                }
+                                class_pred = model_clas(reconstruction,skip)
+                            else:
+                                reconstruction, skip = model_comp(batch_val["incomplete_view"])
+                                # HAD TO DETACH TO STOP THE CLASS PREDICTION NETWORK TO TRY TO COMPUTE 
+                                # GRADIENTS ALL THE WAY BACK IN THE COMPLETION NETWORK
+                                skip_detached = {key: value.detach() for key, value in skip.items()}
+                                class_pred = model_clas(reconstruction.detach(),skip_detached)
+                        if config["train_mode"] != "classification":
+                            vis_recon = reconstruction[0]
+                            vis_recon = torch.exp(vis_recon)-1
+                            vis_recon = vis_recon.detach().cpu().numpy()
+                            vis_recon = vis_recon.reshape((64, 64, 64))
+                            vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_recon, level=0)
+                            vert_recon = torch.as_tensor([vertices], dtype=torch.float)
+                            faces_recon = torch.as_tensor([faces], dtype=torch.int)
+                            vis_inc = batch_val["incomplete_view"][0]
+                            vis_inc = vis_inc.detach().cpu().numpy()
+                            vis_inc = vis_inc.reshape((64, 64, 64))
+                            vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_inc, level=0)
+                            vert_inc = torch.as_tensor([vertices], dtype=torch.float)
+                            faces_inc = torch.as_tensor([faces], dtype=torch.int)
+                            vis_com = batch_val["target_sdf"][0]
+                            vis_com = vis_com.detach().cpu().numpy()
+                            vis_com = vis_com.reshape((64, 64, 64))
+                            vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_com, level=0)
+                            vert_com = torch.as_tensor([vertices], dtype=torch.float)
+                            faces_com = torch.as_tensor([faces], dtype=torch.int)
 
                         target_sdf = batch_val["target_sdf"]
                         if config["dataset"] != "Shapenet":
@@ -227,35 +257,47 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_comp.train()
                     model_clas.train()
 
+                tb.add_scalar("Val_Loss", val_loss, epoch)
+                if config["train_mode"] != "classification":
+                    tb.add_mesh("Recon Mesh", vertices=vert_recon, faces=faces_recon)
+                    tb.add_mesh("Input Mesh", vertices=vert_inc, faces=faces_inc)
+                    tb.add_mesh("Target Mesh", vertices=vert_com, faces=faces_com)
 
-                tb.add_scalar("Val_Loss", val_loss/(len(val_dataloader)), epoch)
 
 
+        if config["train_mode"] == "completion":
+                cmp_scheduler.step()
+        elif config["train_mode"] == "classification":
+            cls_scheduler.step(val_loss)
+        elif config["train_mode"] == "all":
+            cmp_scheduler.step()
+            cls_scheduler.step(val_loss)
+    
+        #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
+        batch_loss = batch_loss/len(train_dataloader)
+        tb.add_scalar("Train_Loss", batch_loss, epoch)
+        #print(batch_loss)
+        #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
+        if epoch%config["save_freq"] == 0:
+            file_name = 'ckpt-best-' if batch_loss<best_loss else 'ckpt-epoch-%03d-' % epoch
+            file_name = file_name + config["train_mode"] + ".pth"
+            output_path = "./ckpts/"+config["dataset"]+"/"+file_name
+            torch.save({
+                'epoch_index': epoch,
+                'model_comp': model_comp.state_dict(),
+                'model_clas': model_clas.state_dict(),
+                'cmp_optim': cmp_optim.state_dict(),
+                'cls_optim': cls_optim.state_dict(),
+                'cmp_scheduler': cmp_scheduler.state_dict(),
+                'cls_scheduler': cls_scheduler.state_dict(),
+                "weight_CE": weight_CE,
+                "weight_L1:": weight_L1
+            }, output_path)  # yapf: disable
 
-                #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
-                val_loss /= len(val_dataloader)
-                #print(batch_loss)
-                #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
-                if epoch % config["save_freq"] == 0:
-                    file_name = 'ckpt-best-' if val_loss < best_loss else 'ckpt-epoch-%03d-' % epoch
-                    file_name = file_name + config["train_mode"] + ".pth"
-                    output_path = "./ckpts/"+config["dataset"]+"/"+file_name
-                    torch.save({
-                        'epoch_index': epoch,
-                        'model_comp': model_comp.state_dict(),
-                        'model_clas': model_clas.state_dict(),
-                        'cmp_optim': cmp_optim.state_dict(),
-                        'cls_optim': cls_optim.state_dict(),
-                        'cmp_scheduler': cmp_scheduler.state_dict(),
-                        'cls_scheduler': cls_scheduler.state_dict(),
-                        "weight_CE": weight_CE,
-                        "weight_L1:": weight_L1
-                    }, output_path)  # yapf: disable
-                    print("[INFO] saved new model parameters")
+            # print(f'Saved checkpoint to {output_path}')
+            if batch_loss<best_loss:
+                best_loss = batch_loss
 
-                    # print(f'Saved checkpoint to {output_path}')
-                    if val_loss < best_loss:
-                        best_loss = val_loss
 
 
 

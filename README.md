@@ -55,7 +55,7 @@ python3 -m src.train_runner -tr classification
 ```
 To start training the whole model simply run:
 ```
-python3 -m src.train_runner -tr classification
+python3 -m src.train_runner -tr all
 ```
 
 Notes: 
