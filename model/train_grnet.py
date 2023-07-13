@@ -12,10 +12,24 @@ import os
 
 torch.autograd.set_detect_anomaly(True)
 
+
+class log_space_L1_loss(torch.nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(log_space_L1_loss, self).__init__()
+
+    def forward(self, reconstruction, target):
+        target_log = torch.log(torch.abs(target) + 1)
+
+        loss = torch.abs(torch.abs(reconstruction) - target_log)
+
+        # sign_mask = torch.sign(reconstruction) * torch.sign(target) < 0
+        # loss = torch.where(sign_mask, 2 * loss, loss)
+
+        return torch.mean(loss)
 def train(model_comp, model_clas, train_dataloader, val_dataloader,
           device, config):
 
-    completion_loss_criterion = torch.nn.SmoothL1Loss()
+    completion_loss_criterion = log_space_L1_loss()
     completion_loss_criterion.to(device)
     classification_loss_criterion = torch.nn.BCEWithLogitsLoss()
     classification_loss_criterion.to(device)
@@ -119,6 +133,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             target_sdf[batch["incomplete_view"] > 0] = 0
             
             if config["train_mode"] == "completion":
+
                 loss = completion_loss_criterion(reconstruction, target_sdf)
             elif config["train_mode"] == "classification":
                 loss = classification_loss_criterion(class_pred,class_target)
@@ -153,10 +168,10 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             batch_loss += loss.item()
             iteration = epoch * len(train_dataloader) + batch_idx
 
-            tb.add_scalar("Train_Loss", train_loss_running, epoch)
-
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
-                print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {train_loss_running / config["print_every_n"]:.6f}')
+                tb.add_scalar("Train_Loss",
+                              train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0]), epoch)
+                print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"])):.6f}')
                 train_loss_running = 0.
 
             # Validation
@@ -170,6 +185,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_clas.eval()
 
                 val_loss = 0.
+                print("[INFO] Validating")
 
                 for batch_val in val_dataloader:
                     ScanObjectNNDataset.send_data_to_device(batch_val, device)
@@ -182,8 +198,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                         target_sdf = batch_val["target_sdf"]
                         if config["dataset"] != "Shapenet":
                             class_target = batch_val["class"]
-                        reconstruction[batch_val["incomplete_view"] > 0] = 0
-                        target_sdf[batch_val["incomplete_view"] > 0] = 0
+                        # reconstruction[batch_val["incomplete_view"] > 0] = 0
+                        # target_sdf[batch_val["incomplete_view"] > 0] = 0
 
                         if config["train_mode"] == "completion":
                             loss = completion_loss_criterion(reconstruction, target_sdf)
@@ -212,33 +228,34 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_clas.train()
 
 
-                tb.add_scalar("Val_Loss", val_loss, epoch)
+                tb.add_scalar("Val_Loss", val_loss/(len(val_dataloader)), epoch)
 
 
 
-        #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
-        batch_loss = batch_loss/len(train_dataloader)
-        #print(batch_loss)
-        #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
-        if epoch%config["save_freq"] == 0:
-            file_name = 'ckpt-best-' if batch_loss<best_loss else 'ckpt-epoch-%03d-' % epoch
-            file_name = file_name + config["train_mode"] + ".pth"
-            output_path = "./ckpts/"+config["dataset"]+"/"+file_name
-            torch.save({
-                'epoch_index': epoch,
-                'model_comp': model_comp.state_dict(),
-                'model_clas': model_clas.state_dict(),
-                'cmp_optim': cmp_optim.state_dict(),
-                'cls_optim': cls_optim.state_dict(),
-                'cmp_scheduler': cmp_scheduler.state_dict(),
-                'cls_scheduler': cls_scheduler.state_dict(),
-                "weight_CE": weight_CE,
-                "weight_L1:": weight_L1
-            }, output_path)  # yapf: disable
+                #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
+                val_loss /= len(val_dataloader)
+                #print(batch_loss)
+                #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
+                if epoch % config["save_freq"] == 0:
+                    file_name = 'ckpt-best-' if val_loss < best_loss else 'ckpt-epoch-%03d-' % epoch
+                    file_name = file_name + config["train_mode"] + ".pth"
+                    output_path = "./ckpts/"+config["dataset"]+"/"+file_name
+                    torch.save({
+                        'epoch_index': epoch,
+                        'model_comp': model_comp.state_dict(),
+                        'model_clas': model_clas.state_dict(),
+                        'cmp_optim': cmp_optim.state_dict(),
+                        'cls_optim': cls_optim.state_dict(),
+                        'cmp_scheduler': cmp_scheduler.state_dict(),
+                        'cls_scheduler': cls_scheduler.state_dict(),
+                        "weight_CE": weight_CE,
+                        "weight_L1:": weight_L1
+                    }, output_path)  # yapf: disable
+                    print("[INFO] saved new model parameters")
 
-            # print(f'Saved checkpoint to {output_path}')
-            if batch_loss<best_loss:
-                best_loss = batch_loss
+                    # print(f'Saved checkpoint to {output_path}')
+                    if val_loss < best_loss:
+                        best_loss = val_loss
 
 
 
