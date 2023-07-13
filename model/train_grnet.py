@@ -172,7 +172,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                             reconstruction, skip = model_comp(batch_val["incomplete_view"])
                         else:
                             if config["train_mode"] == "classification":
-                                reconstruction = batch_val["incomplete_view"]
+                                reconstruction = batch_val["target_sdf"]
                                 # TODO: IF YOU HAVE A BETTER ALTERNATIVE PLEASE CHANGE
                                 skip = {
                                     '32_r': torch.ones([config["batch_size"], 32, 32, 32, 32],device=device),
@@ -188,6 +188,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                                 class_pred = model_clas(reconstruction.detach(),skip_detached)
                         if config["train_mode"] != "classification":
                             vis_recon = reconstruction[0]
+                            vis_recon = torch.exp(vis_recon)-1
                             vis_recon = vis_recon.detach().cpu().numpy()
                             vis_recon = vis_recon.reshape((64, 64, 64))
                             vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_recon, level=0)
