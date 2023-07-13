@@ -33,7 +33,7 @@ print(sample_paths)
 model = GRNet_comp()
 model = model.cuda()
 
-# # Load the model checkpoint
+# Load the model checkpoint
 optimizer = torch.optim.Adam(model.parameters())
 checkpoint = torch.load("./ckpts/ScanObjectNN/ckpt-best-completion.pth")
 model.load_state_dict(checkpoint['model_comp'])
@@ -41,9 +41,6 @@ optimizer.load_state_dict(checkpoint['cmp_optim'])
 print("success loading")
 
 
-# # Set the model to evaluation mode
-# model.eval()
-#
 # Loop through the sample paths and visualize each sample
 for sample_path in sample_paths:
     print(f"[INFO] Sample: {sample_path}")
@@ -55,27 +52,25 @@ for sample_path in sample_paths:
     voxels = torch.from_numpy(voxels).cuda()
     model.eval()
 
-#
-#     # Perform the inference
+
+    # Perform the inference
     with torch.no_grad():
         recon, skip = model.forward(data=voxels)
         recon = torch.exp(recon) - 1.0
         recon = recon.detach().cpu().numpy()
         recon = recon.reshape((64, 64, 64))
         print(recon.shape)
-#
-#     # Extract the mesh from the reconstructed volume
+
+    # Extract the mesh from the reconstructed volume
     vertices, faces, normals, _ = skimage.measure.marching_cubes(recon, level=0)
     mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_normals=normals)
-#
-#     # Convert the mesh to Open3D CUDA mesh
+
+    # Convert the mesh to Open3D mesh
     mesh = mesh.as_open3d
-#
+
     # Visualize the mesh
     o3d.visualization.draw_geometries([mesh],
                                       zoom=0.664,
                                       front=[-0.4761, -0.4698, -0.7434],
                                       lookat=[0, 0, 0],
                                       up=[0.2304, -0.8825, 0.4101])
-
-
