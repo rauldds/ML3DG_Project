@@ -12,10 +12,24 @@ import os
 
 torch.autograd.set_detect_anomaly(True)
 
+
+class log_space_L1_loss(torch.nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(log_space_L1_loss, self).__init__()
+
+    def forward(self, reconstruction, target):
+        target_log = torch.log(torch.abs(target) + 1)
+
+        loss = torch.abs(torch.abs(reconstruction) - target_log)
+
+        sign_mask = torch.sign(reconstruction) * torch.sign(target) < 0
+        loss = torch.where(sign_mask, 2 * loss, loss)
+
+        return torch.mean(loss)
 def train(model_comp, model_clas, train_dataloader, val_dataloader,
           device, config):
 
-    completion_loss_criterion = torch.nn.SmoothL1Loss()
+    completion_loss_criterion = log_space_L1_loss()
     completion_loss_criterion.to(device)
     classification_loss_criterion = torch.nn.BCEWithLogitsLoss()
     classification_loss_criterion.to(device)
@@ -119,6 +133,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             target_sdf[batch["incomplete_view"] > 0] = 0
             
             if config["train_mode"] == "completion":
+
                 loss = completion_loss_criterion(reconstruction, target_sdf)
             elif config["train_mode"] == "classification":
                 loss = classification_loss_criterion(class_pred,class_target)
