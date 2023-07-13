@@ -171,7 +171,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
                 tb.add_scalar("Train_Loss",
                               train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0]), epoch)
-                print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(config["print_every_n"] * batch["incomplete_view"].shape[0]):.6f}')
+                print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0])):.6f}')
                 train_loss_running = 0.
 
             # Validation
