@@ -231,29 +231,29 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
 
 
 
-        #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
-        val_loss /= len(val_dataloader)
-        #print(batch_loss)
-        #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
-        if epoch % config["save_freq"] == 0:
-            file_name = 'ckpt-best-' if val_loss < best_loss else 'ckpt-epoch-%03d-' % epoch
-            file_name = file_name + config["train_mode"] + ".pth"
-            output_path = "./ckpts/"+config["dataset"]+"/"+file_name
-            torch.save({
-                'epoch_index': epoch,
-                'model_comp': model_comp.state_dict(),
-                'model_clas': model_clas.state_dict(),
-                'cmp_optim': cmp_optim.state_dict(),
-                'cls_optim': cls_optim.state_dict(),
-                'cmp_scheduler': cmp_scheduler.state_dict(),
-                'cls_scheduler': cls_scheduler.state_dict(),
-                "weight_CE": weight_CE,
-                "weight_L1:": weight_L1
-            }, output_path)  # yapf: disable
+                #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
+                val_loss /= len(val_dataloader)
+                #print(batch_loss)
+                #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
+                if epoch % config["save_freq"] == 0:
+                    file_name = 'ckpt-best-' if val_loss < best_loss else 'ckpt-epoch-%03d-' % epoch
+                    file_name = file_name + config["train_mode"] + ".pth"
+                    output_path = "./ckpts/"+config["dataset"]+"/"+file_name
+                    torch.save({
+                        'epoch_index': epoch,
+                        'model_comp': model_comp.state_dict(),
+                        'model_clas': model_clas.state_dict(),
+                        'cmp_optim': cmp_optim.state_dict(),
+                        'cls_optim': cls_optim.state_dict(),
+                        'cmp_scheduler': cmp_scheduler.state_dict(),
+                        'cls_scheduler': cls_scheduler.state_dict(),
+                        "weight_CE": weight_CE,
+                        "weight_L1:": weight_L1
+                    }, output_path)  # yapf: disable
 
-            # print(f'Saved checkpoint to {output_path}')
-            if val_loss < best_loss:
-                best_loss = val_loss
+                    # print(f'Saved checkpoint to {output_path}')
+                    if val_loss < best_loss:
+                        best_loss = val_loss
 
 
 
