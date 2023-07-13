@@ -37,6 +37,8 @@ model.eval()
 
 recon, skip = model.forward(data=voxels)
 
+recon = torch.exp(recon) - 1.0
+
 print(recon.shape)
 
 recon = recon.detach().cpu().numpy()
