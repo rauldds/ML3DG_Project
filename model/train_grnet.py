@@ -164,10 +164,11 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             iteration = epoch * len(train_dataloader) + batch_idx
 
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
-                tb.add_scalar("Train_Loss",
-                              train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0]), epoch)
-                print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"])):.6f}')
+                # tb.add_scalar("Train_Loss",
+                #               train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0]), epoch)
+                # print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"])):.6f}')
                 train_loss_running = 0.
+                print(f'[{epoch:03d}/{batch_idx:05d}] val_loss: {batch_loss:.6f}')
 
             # Validation
             if iteration % config['validate_every_n'] == (config['validate_every_n'] - 1):
@@ -205,7 +206,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                                 skip_detached = {key: value.detach() for key, value in skip.items()}
                                 class_pred = model_clas(reconstruction.detach(),skip_detached)
                         if config["train_mode"] != "classification":
-                            vis_recon = reconstruction[10]
+                            vis_recon = reconstruction[0]
                             vis_recon = torch.exp(vis_recon)-1
                             vis_recon = vis_recon.detach().cpu().numpy()
                             vis_recon = vis_recon.reshape((64, 64, 64))
@@ -297,9 +298,6 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             # print(f'Saved checkpoint to {output_path}')
             if batch_loss<best_loss:
                 best_loss = batch_loss
-
-
-
 
 
 def main(config):

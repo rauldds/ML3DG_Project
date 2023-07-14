@@ -10,8 +10,8 @@ config = {
     'betas': (.9, .999),
     'max_epochs': 300,
     'print_every_n': 10,
-    'validate_every_n': 1000,
-    'milestones':[50],
+    'validate_every_n': 500,
+    'milestones':[40, 80, 120, 200],
     'num_workers':8,
     'gamma': 0.5,
     'save_freq': 10
