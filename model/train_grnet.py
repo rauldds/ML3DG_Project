@@ -255,20 +255,20 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
         batch_loss = batch_loss/len(train_dataloader)
         train_accuracy = train_accuracy/len(train_dataloader)
         tb.add_scalar("Train_Loss", batch_loss, epoch)
-        metrics_dict ={"train loss": batch_loss,
-                        "val loss": val_loss,
+        '''metrics_dict ={"train loss": batch_loss,
+                        #"val loss": val_loss,
                         #"lr": cls_optim.param_groups["lr"],
-                        "epoch": epoch}
+                        "epoch": epoch}'''
 
         if config["train_mode"] == "completion":
                 cmp_scheduler.step()
-                tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
-                tb.add_hparams(config, metrics_dict)
         elif config["train_mode"] == "classification":
-            cls_scheduler.step(val_loss)
+            cls_scheduler.step(batch_loss)
+            tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
+            # tb.add_hparams(config, metrics_dict)
         elif config["train_mode"] == "all":
             cmp_scheduler.step()
-            cls_scheduler.step(val_loss)
+            cls_scheduler.step(batch_loss)
             tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
 
         #print(batch_loss)
