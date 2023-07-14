@@ -168,7 +168,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 #               train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0]), epoch)
                 # print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"])):.6f}')
                 train_loss_running = 0.
-                print(f'[{epoch:03d}/{batch_idx:05d}] val_loss: {batch_loss:.6f}')
+                print(f'[{epoch:03d}/{batch_idx:05d}] Train_loss: {batch_loss:.6f}')
 
             # Validation
             if iteration % config['validate_every_n'] == (config['validate_every_n'] - 1):
