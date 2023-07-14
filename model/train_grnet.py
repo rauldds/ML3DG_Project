@@ -13,10 +13,24 @@ import os
 
 torch.autograd.set_detect_anomaly(True)
 
+
+class log_space_L1_loss(torch.nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(log_space_L1_loss, self).__init__()
+
+    def forward(self, reconstruction, target):
+        target_log = torch.log(torch.abs(target) + 1)
+
+        loss = torch.abs(torch.abs(reconstruction) - target_log)
+
+        # sign_mask = torch.sign(reconstruction) * torch.sign(target) < 0
+        # loss = torch.where(sign_mask, 2 * loss, loss)
+
+        return torch.mean(loss)
 def train(model_comp, model_clas, train_dataloader, val_dataloader,
           device, config):
 
-    completion_loss_criterion = torch.nn.SmoothL1Loss()
+    completion_loss_criterion = log_space_L1_loss()
     completion_loss_criterion.to(device)
     classification_loss_criterion = torch.nn.BCEWithLogitsLoss()
     classification_loss_criterion.to(device)
@@ -115,6 +129,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             target_sdf[batch["incomplete_view"] > 0] = 0
             
             if config["train_mode"] == "completion":
+
                 loss = completion_loss_criterion(reconstruction, target_sdf)
             elif config["train_mode"] == "classification":
                 loss = classification_loss_criterion(class_pred,class_target)
@@ -153,8 +168,11 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 train_accuracy += correct / total
 
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
-                print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {train_loss_running / config["print_every_n"]:.6f}')
+                # tb.add_scalar("Train_Loss",
+                #               train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0]), epoch)
+                # print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"])):.6f}')
                 train_loss_running = 0.
+                # print(f'[{epoch:03d}/{batch_idx:05d}] Train_loss: {batch_loss:.6f}')
 
             # Validation
             if iteration % config['validate_every_n'] == (config['validate_every_n'] - 1):
@@ -167,7 +185,10 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_clas.eval()
 
                 val_loss = 0.
+
                 sample_mesh_obtained = False
+                print("[INFO] Validating")
+
                 for batch_val in val_dataloader:
                     ScanObjectNNDataset.send_data_to_device(batch_val, device)
 
@@ -231,7 +252,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                             loss = scaled_loss_CE + scaled_loss_comp
 
                     val_loss += loss.item()
-
+                val_loss /= len(val_dataloader)
                 print(f'[{epoch:03d}/{batch_idx:05d}] val_loss: {val_loss:.6f}')
 
                 if config["train_mode"] == "completion":
@@ -244,8 +265,6 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_comp.train()
                     model_clas.train()
 
-
-                val_loss /= len(val_dataloader)
                 tb.add_scalar("Val_Loss", val_loss, epoch)
                 if config["train_mode"] != "classification":
                     tb.add_mesh("Recon Mesh", vertices=vert_recon, faces=faces_recon,global_step=epoch)
@@ -254,6 +273,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
 
         batch_loss = batch_loss/len(train_dataloader)
         train_accuracy = train_accuracy/len(train_dataloader)
+        print(f'[{epoch:03d}] Train_loss: {batch_loss:.6f}')
         tb.add_scalar("Train_Loss", batch_loss, epoch)
         '''metrics_dict ={"train loss": batch_loss,
                         #"val loss": val_loss,
@@ -261,7 +281,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                         "epoch": epoch}'''
 
         if config["train_mode"] == "completion":
-                cmp_scheduler.step()
+            cmp_scheduler.step()
         elif config["train_mode"] == "classification":
             cls_scheduler.step(batch_loss)
             tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
@@ -292,8 +312,6 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             # print(f'Saved checkpoint to {output_path}')
             if batch_loss<best_loss:
                 best_loss = batch_loss
-
-
 
 
 def main(config):
