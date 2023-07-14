@@ -82,6 +82,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
     best_loss = 100
     for epoch in range(config['max_epochs']):
         batch_loss = 0
+        train_accuracy = 0
         for batch_idx, batch in enumerate(train_dataloader):
             ScanObjectNNDataset.send_data_to_device(batch, device)
 
@@ -92,8 +93,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 reconstruction, skip = model_comp(batch["incomplete_view"])
             else:
                 if config["train_mode"] == "classification":
-                    reconstruction = batch["incomplete_view"]
-                    # TODO: IF YOU HAVE A BETTER ALTERNATIVE PLEASE CHANGE
+                    reconstruction = batch["target_sdf"]
                     skip = {
                         '32_r': torch.ones([config["batch_size"], 32, 32, 32, 32],device=device),
                         '16_r': torch.ones([config["batch_size"], 64, 16, 16, 16],device=device),
@@ -107,9 +107,6 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     skip_detached = {key: value.detach() for key, value in skip.items()}
                     class_pred = model_clas(reconstruction.detach(),skip_detached)
 
-            # TODO: understand the following mask:
-            #  reconstruction[batch_val['input_sdf'][:, 1] == 1] = 0
-            #  target[batch_val['input_sdf'][:, 1] == 1] = 0
             target_sdf = batch["target_sdf"]
             if config["dataset"] !="Shapenet":
                 class_target = batch["class"]
@@ -137,7 +134,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 cls_optim.step()
             elif config["train_mode"] == "all":
                 cmp_optim.step()
-                cmp_scheduler.step()
+                cls_optim.step()
 
                 weight_CE -= config['learning_rate'] * weight_CE.grad.data
                 weight_L1 -= config['learning_rate'] * weight_L1.grad.data
@@ -147,6 +144,13 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             train_loss_running += loss.item()
             batch_loss += loss.item()
             iteration = epoch * len(train_dataloader) + batch_idx
+
+            if config["train_mode"] != "completion":
+                predicted_labels = torch.argmax(class_pred, dim=1) 
+                target_labels = torch.argmax(class_target, dim=1) 
+                correct = (predicted_labels == target_labels).sum().item()
+                total = len(class_target)
+                train_accuracy += correct / total
 
             if iteration % config["print_every_n"] == (config["print_every_n"] - 1):
                 print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {train_loss_running / config["print_every_n"]:.6f}')
@@ -163,7 +167,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_clas.eval()
 
                 val_loss = 0.
-
+                sample_mesh_obtained = False
                 for batch_val in val_dataloader:
                     ScanObjectNNDataset.send_data_to_device(batch_val, device)
 
@@ -186,7 +190,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                                 # GRADIENTS ALL THE WAY BACK IN THE COMPLETION NETWORK
                                 skip_detached = {key: value.detach() for key, value in skip.items()}
                                 class_pred = model_clas(reconstruction.detach(),skip_detached)
-                        if config["train_mode"] != "classification":
+                        if config["train_mode"] != "classification" and not sample_mesh_obtained:
+                            sample_mesh_obtained = True
                             vis_recon = reconstruction[0]
                             vis_recon = torch.exp(vis_recon)-1
                             vis_recon = vis_recon.detach().cpu().numpy()
@@ -240,25 +245,32 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     model_clas.train()
 
 
+                val_loss /= len(val_dataloader)
                 tb.add_scalar("Val_Loss", val_loss, epoch)
                 if config["train_mode"] != "classification":
-                    tb.add_mesh("Recon Mesh", vertices=vert_recon, faces=faces_recon)
-                    tb.add_mesh("Input Mesh", vertices=vert_inc, faces=faces_inc)
-                    tb.add_mesh("Target Mesh", vertices=vert_com, faces=faces_com)
+                    tb.add_mesh("Recon Mesh", vertices=vert_recon, faces=faces_recon,global_step=epoch)
+                    tb.add_mesh("Input Mesh", vertices=vert_inc, faces=faces_inc,global_step=epoch)
+                    tb.add_mesh("Target Mesh", vertices=vert_com, faces=faces_com,global_step=epoch)
 
-
+        batch_loss = batch_loss/len(train_dataloader)
+        train_accuracy = train_accuracy/len(train_dataloader)
+        tb.add_scalar("Train_Loss", batch_loss, epoch)
+        metrics_dict ={"train loss": batch_loss,
+                        "val loss": val_loss,
+                        #"lr": cls_optim.param_groups["lr"],
+                        "epoch": epoch}
 
         if config["train_mode"] == "completion":
                 cmp_scheduler.step()
+                tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
+                tb.add_hparams(config, metrics_dict)
         elif config["train_mode"] == "classification":
             cls_scheduler.step(val_loss)
         elif config["train_mode"] == "all":
             cmp_scheduler.step()
             cls_scheduler.step(val_loss)
-    
-        #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
-        batch_loss = batch_loss/len(train_dataloader)
-        tb.add_scalar("Train_Loss", batch_loss, epoch)
+            tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
+
         #print(batch_loss)
         #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
         if epoch%config["save_freq"] == 0:
