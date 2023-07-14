@@ -205,7 +205,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                                 skip_detached = {key: value.detach() for key, value in skip.items()}
                                 class_pred = model_clas(reconstruction.detach(),skip_detached)
                         if config["train_mode"] != "classification":
-                            vis_recon = reconstruction[0]
+                            vis_recon = reconstruction[10]
                             vis_recon = torch.exp(vis_recon)-1
                             vis_recon = vis_recon.detach().cpu().numpy()
                             vis_recon = vis_recon.reshape((64, 64, 64))
@@ -228,8 +228,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                         target_sdf = batch_val["target_sdf"]
                         if config["dataset"] != "Shapenet":
                             class_target = batch_val["class"]
-                        # reconstruction[batch_val["incomplete_view"] > 0] = 0
-                        # target_sdf[batch_val["incomplete_view"] > 0] = 0
+                        reconstruction[batch_val["incomplete_view"] > 0] = 0
+                        target_sdf[batch_val["incomplete_view"] > 0] = 0
 
                         if config["train_mode"] == "completion":
                             loss = completion_loss_criterion(reconstruction, target_sdf)
@@ -244,7 +244,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                             loss = scaled_loss_CE + scaled_loss_comp
 
                     val_loss += loss.item()
-
+                val_loss /= len(val_dataloader)
                 print(f'[{epoch:03d}/{batch_idx:05d}] val_loss: {val_loss:.6f}')
 
                 if config["train_mode"] == "completion":
@@ -266,7 +266,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
 
 
         if config["train_mode"] == "completion":
-                cmp_scheduler.step()
+            cmp_scheduler.step()
         elif config["train_mode"] == "classification":
             cls_scheduler.step(val_loss)
         elif config["train_mode"] == "all":

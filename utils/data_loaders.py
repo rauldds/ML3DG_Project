@@ -16,8 +16,8 @@ class DatasetSubset(Enum):
 
 class ScanObjectNNDataset(torch.utils.data.dataset.Dataset):
     # TODO: Update path
-    # DATASET_PATH = '/media/davidg-dl/Second SSD/CompleteDataset/'
-    DATASET_PATH = '/media/rauldds/TOSHIBA EXT/ML3G/Full_Project_Dataset/'
+    DATASET_PATH = '/media/davidg-dl/Second SSD/CompleteDataset/'
+    # DATASET_PATH = '/media/rauldds/TOSHIBA EXT/ML3G/Full_Project_Dataset/'
 
     #TODO: how many of the original implementations do we need? need to figure it out when testing in the train loop
     def __init__(self, split, options=None, file_list =None, transforms=None):
