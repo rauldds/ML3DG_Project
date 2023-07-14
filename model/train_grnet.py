@@ -168,7 +168,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 #               train_loss_running / (config["print_every_n"] * batch["incomplete_view"].shape[0]), epoch)
                 # print(f'[{epoch:03d}/{batch_idx:05d}] train_loss: {(train_loss_running / (config["print_every_n"])):.6f}')
                 train_loss_running = 0.
-                print(f'[{epoch:03d}/{batch_idx:05d}] Train_loss: {batch_loss:.6f}')
+                # print(f'[{epoch:03d}/{batch_idx:05d}] Train_loss: {batch_loss:.6f}')
 
             # Validation
             if iteration % config['validate_every_n'] == (config['validate_every_n'] - 1):
@@ -277,6 +277,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
         #Path(f'/ckpts').mkdir(exist_ok=True, parents=True)
         batch_loss = batch_loss/len(train_dataloader)
         tb.add_scalar("Train_Loss", batch_loss, epoch)
+        print(f'[{epoch:03d}] Train_loss: {batch_loss:.6f}')
         #print(batch_loss)
         #if epoch%config["save_freq"] == 0 or batch_loss<best_loss:
         if epoch%config["save_freq"] == 0:
