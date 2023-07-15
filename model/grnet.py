@@ -268,7 +268,7 @@ class GRNet_clas(torch.nn.Module):
     def __init__(self):
         super(GRNet_clas, self).__init__()
         self.gridding_rev = GriddingReverse(scale=64)
-        self.averaging = torch.nn.MaxPool3d(kernel_size=4)
+        self.maxpooling = torch.nn.MaxPool3d(kernel_size=4)
         self.point_sampling = RandomPointSampling(n_points=2048)
         self.feature_sampling = CubicFeatureSampling()
         self.fc11 = torch.nn.Sequential(
@@ -307,15 +307,15 @@ class GRNet_clas(torch.nn.Module):
         )
 
     def forward(self, data, skip):
+        # Modification to hihglight points close to the object surface
+        # and reduce the importance of the rest of the grid
         completion_pred = (abs(data) <= 1).float()
         # print(completion_pred.size())  # torch.Size([batch_size, 1, 64, 64, 64])
         sparse_cloud = self.gridding_rev(completion_pred.squeeze(dim=1))
         #print(sparse_cloud.size())      # torch.Size([batch_size, 262144, 3])
-        
-        sparse_cloud = self.averaging(sparse_cloud.reshape([sparse_cloud.shape[0],3,64,64,64]))
+        sparse_cloud = self.maxpooling(sparse_cloud.reshape([sparse_cloud.shape[0],3,64,64,64]))
+        #print(sparse_cloud.size())      # torch.Size([batch_size, 3, 16, 16, 16])
         sparse_cloud = self.point_sampling(sparse_cloud.reshape([sparse_cloud.shape[0],4096,3]))
-
-        #sparse_cloud = self.point_sampling(sparse_cloud)
         # print(sparse_cloud.size())      # torch.Size([batch_size, 2048, 3])
         point_features_32 = self.feature_sampling(sparse_cloud, skip["32_r"]).view(-1, 2048, 256)
         # print(point_features_32.size()) # torch.Size([batch_size, 2048, 256])
