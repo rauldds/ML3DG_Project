@@ -179,12 +179,12 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 cls_optim.step()
 
                 # Updating weights based on gradients after each batch iteration
-                weight_CE -= config["cls_net"]['learning_rate'] * weight_CE.grad.data
-                weight_L1 -= config['learning_rate'] * weight_L1.grad.data
+                updated_weight_CE = weight_CE - config["cls_net"]['learning_rate'] * weight_CE.grad.data
+                updated_weight_L1 = weight_L1 - config['learning_rate'] * weight_L1.grad.data
 
                 #Setting gradients to 0 after each batch iteration
-                weight_L1.grad.data.zero()
-                weight_CE.grad.data.zero()
+                weight_L1.grad.data.zero_()
+                weight_CE.grad.data.zero_()
 
             # Obtaining the batch loss after each batch iteration
             batch_loss += loss.item()
@@ -287,8 +287,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                         elif config["train_mode"] == "all":
                             loss_comp = completion_loss_criterion(reconstruction, target_sdf)
                             loss_class = classification_loss_criterion(class_pred, class_target)
-                            scaled_loss_CE = weight_CE * loss_class
-                            scaled_loss_comp = weight_L1 * loss_comp
+                            scaled_loss_CE = updated_weight_CE * loss_class
+                            scaled_loss_comp = updated_weight_L1 * loss_comp
                             loss = scaled_loss_CE + scaled_loss_comp
 
                     # Obtaining validation loss after each val batch iteration
@@ -333,7 +333,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
         # Averaging batch loss and train accuracy based on the number of training batches
         batch_loss = batch_loss/len(train_dataloader)
         train_accuracy = train_accuracy/len(train_dataloader)
-        print(f'[{epoch:03d}] Train_loss: {batch_loss:.6f}')
+        print(f'[{epoch:03d}] Train_loss: {batch_loss:.6f}, weight for CE loss:{updated_weight_CE:.4f}, weight for L1 loss:{updated_weight_L1:.6f}')
         # Writing batch loss to tensorboard every epoch
         tb.add_scalar("Train_Loss", batch_loss, epoch)
         metrics_dict ={"train loss": batch_loss,

@@ -1,19 +1,19 @@
 config = {
     'device': 'cuda:0',  # change this to cpu if you do not have a GPU (cuda:0)
     'is_overfit': False,
-    'num_workers': 3,
+    'num_workers': 8,
     'save_freq': 10,
-    'batch_size': 24,
-    'batch_size_val': 24,
-    'max_epochs': 21,
-    'validate_every_n': 430,
-    'learning_rate': 0.002,
+    'batch_size': 48,
+    'batch_size_val': 48,
+    'max_epochs': 2,
+    'validate_every_n': 500,
+    'learning_rate': 0.00001,
     'weight_decay': 1e-4,
     'betas': (.9, .999),
-    'milestones':[40, 80, 120, 200],
-    'gamma': 0.5,
+    'milestones':[100],
+    'gamma': 0.95,
     "cls_net":{
-        'learning_rate': 0.0001,
+        'learning_rate': 0.00008,
         'weight_decay': 1e-4,
     }
 }
