@@ -60,8 +60,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 ckpt["cmp_scheduler"] = cmp_scheduler_dict
 
     #Weighted loss to train both completion part and classifcation parts together
-    weight_CE = torch.tensor(0.5, requires_grad=True)
-    weight_L1 = torch.tensor(0.5, requires_grad=True)
+    weight_CE = torch.tensor(0.9, requires_grad=True)
+    weight_L1 = torch.tensor(0.1, requires_grad=True)
 
     # Defining the optimizers for each network
     cmp_optim = torch.optim.Adam(model_comp.parameters(),
