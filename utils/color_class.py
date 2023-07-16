@@ -37,7 +37,10 @@ class ColoredMeshesDataset(Dataset):
             "target_mesh": complete_mesh,
             "incomplete_mesh": incomplete_mesh
         }
-
+    @staticmethod
+    def send_data_to_device(batch_val, device):
+        batch_val["target_mesh"] = batch_val["target_mesh"].to(device)
+        batch_val["incomplete_mesh"] = batch_val["incomplete_mesh"].to(device)
     @staticmethod
     def get_target_mesh(dataset_path, class_name, shape_id):
         target_path = dataset_path+ '/GT/colorized_meshes/' + class_name + f"/{shape_id}.obj"
