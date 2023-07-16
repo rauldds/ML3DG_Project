@@ -5,15 +5,16 @@ config = {
     'save_freq': 10,
     'batch_size': 48,
     'batch_size_val': 48,
-    'max_epochs': 2,
+    'max_epochs': 50,
     'validate_every_n': 500,
     'learning_rate': 0.00001,
     'weight_decay': 1e-4,
     'betas': (.9, .999),
     'milestones':[100],
     'gamma': 0.95,
+    'learning_rate_loss_weights': 0.0001,
     "cls_net":{
-        'learning_rate': 0.00008,
+        'learning_rate': 0.001,
         'weight_decay': 1e-4,
     }
 }
