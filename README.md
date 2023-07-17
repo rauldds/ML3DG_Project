@@ -80,6 +80,10 @@ Once the classification model is trained, you can check how well it performs by 
 ```
 python3 -m inference.object_classification
 ```
+To check how well both nets perform together, simply run: 
+```
+python3 -m inference.completion_and_classification
+```
 Notes: You have to modify the path of the dataset in this script. Probably would be a good idea to pass the dataset as an argument.
 
 
