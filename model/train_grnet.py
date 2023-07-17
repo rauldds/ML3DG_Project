@@ -140,7 +140,13 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     cls_recon = torch.exp(reconstruction)-1
                     # Had to detach to stop the classification net from trying to compute 
                     # gradients all the way back in the completion net
-                    skip_detached = {key: value.detach() for key, value in skip.items()}
+                    #skip_detached = {key: value.detach() for key, value in skip.items()}
+                    # APPARENTLY THE HEAD GOT USED TO RECEIVING ONES
+                    skip_detached = {
+                        '32_r': torch.ones([config["batch_size"], 32, 32, 32, 32],device=device),
+                        '16_r': torch.ones([config["batch_size"], 64, 16, 16, 16],device=device),
+                        '8_r': torch.ones([config["batch_size"], 128, 8, 8, 8],device=device)
+                    }
                     class_pred = model_clas(cls_recon.detach(),skip_detached)
 
             # Extract targets for loss computation
