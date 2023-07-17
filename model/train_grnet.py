@@ -4,6 +4,7 @@ from data_e3.shapenet import ShapeNet
 from model.grnet import GRNet_clas, GRNet_comp
 import skimage
 from torch.utils.tensorboard import SummaryWriter
+import numpy as np
 import utils.data_loaders
 
 torch.autograd.set_detect_anomaly(True)
@@ -59,8 +60,8 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 ckpt["cmp_scheduler"] = cmp_scheduler_dict
 
     #Weighted loss to train both completion part and classifcation parts together
-    weight_CE = torch.tensor(0.5, requires_grad=True)
-    weight_L1 = torch.tensor(0.5, requires_grad=True)
+    weight_CE = torch.tensor(0.9, requires_grad=True)
+    weight_L1 = torch.tensor(0.1, requires_grad=True)
 
     # Defining the optimizers for each network
     cmp_optim = torch.optim.Adam(model_comp.parameters(),
@@ -178,13 +179,17 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 cmp_optim.step()
                 cls_optim.step()
 
+                # # Updating weights based on gradients after each batch iteration
+                # weight_CE.data -= config["cls_net"]['learning_rate'] * weight_CE.grad.data
+                # weight_L1.data -= config['learning_rate'] * weight_L1.grad.data
+
                 # Updating weights based on gradients after each batch iteration
-                weight_CE -= config["cls_net"]['learning_rate'] * weight_CE.grad.data
-                weight_L1 -= config['learning_rate'] * weight_L1.grad.data
+                weight_CE.data -= config['learning_rate_loss_weights'] * weight_CE.grad.data
+                weight_L1.data -= config['learning_rate_loss_weights'] * weight_L1.grad.data
 
                 #Setting gradients to 0 after each batch iteration
-                weight_L1.grad.data.zero()
-                weight_CE.grad.data.zero()
+                weight_L1.grad.data.zero_()
+                weight_CE.grad.data.zero_()
 
             # Obtaining the batch loss after each batch iteration
             batch_loss += loss.item()
@@ -244,30 +249,29 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
 
                         # Generate visualization meshes for the reconstruction, input and target
                         # SDFs to observe completion net changes through diffferent steps
-                        if config["train_mode"] != "classification" and not sample_mesh_obtained:
-                            sample_mesh_obtained = True
+                        if config["train_mode"] != "classification":
                             # Reconstruction mesh obtention
                             vis_recon = reconstruction[0]
-                            vis_recon = torch.exp(vis_recon)-1
+                            vis_recon = torch.exp(vis_recon) - 1
                             vis_recon = vis_recon.detach().cpu().numpy()
                             vis_recon = vis_recon.reshape((64, 64, 64))
                             vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_recon, level=0)
-                            vert_recon = torch.as_tensor([vertices], dtype=torch.float)
-                            faces_recon = torch.as_tensor([faces], dtype=torch.int)
+                            vert_recon = torch.as_tensor(np.array([vertices]), dtype=torch.float)
+                            faces_recon = torch.as_tensor(np.array([faces]), dtype=torch.int)
                             # Input mesh obtention
                             vis_inc = batch_val["incomplete_view"][0]
                             vis_inc = vis_inc.detach().cpu().numpy()
                             vis_inc = vis_inc.reshape((64, 64, 64))
                             vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_inc, level=0)
-                            vert_inc = torch.as_tensor([vertices], dtype=torch.float)
-                            faces_inc = torch.as_tensor([faces], dtype=torch.int)
+                            vert_inc = torch.as_tensor(np.array([vertices]), dtype=torch.float)
+                            faces_inc = torch.as_tensor(np.array([faces]), dtype=torch.int)
                             # Target mesh obtention
                             vis_com = batch_val["target_sdf"][0]
                             vis_com = vis_com.detach().cpu().numpy()
                             vis_com = vis_com.reshape((64, 64, 64))
                             vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_com, level=0)
-                            vert_com = torch.as_tensor([vertices], dtype=torch.float)
-                            faces_com = torch.as_tensor([faces], dtype=torch.int)
+                            vert_com = torch.as_tensor(np.array([vertices]), dtype=torch.float)
+                            faces_com = torch.as_tensor(np.array([faces]), dtype=torch.int)
 
                         # Extract targets for loss computation
                         target_sdf = batch_val["target_sdf"]
@@ -333,7 +337,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
         # Averaging batch loss and train accuracy based on the number of training batches
         batch_loss = batch_loss/len(train_dataloader)
         train_accuracy = train_accuracy/len(train_dataloader)
-        print(f'[{epoch:03d}] Train_loss: {batch_loss:.6f}')
+        print(f'[{epoch:03d}] Train_loss: {batch_loss:.6f}, weight for CE loss:{weight_CE:.4f}, weight for L1 loss:{weight_L1:.6f}')
         # Writing batch loss to tensorboard every epoch
         tb.add_scalar("Train_Loss", batch_loss, epoch)
         metrics_dict ={"train loss": batch_loss,
