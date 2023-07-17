@@ -9,7 +9,7 @@ def train(config, train_dataloader, val_dataloader, num_epochs, device):
     model = model.to(torch.double)
 
     # Define your loss function
-    criterion = torch.nn.L1Loss()
+    criterion = torch.nn.SmoothL1Loss()
 
     # Define your optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])

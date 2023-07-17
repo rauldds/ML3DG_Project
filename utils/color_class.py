@@ -48,7 +48,9 @@ class ColoredMeshesDataset(Dataset):
         vertices = np.asarray(mesh.vertices).T
         colors = np.asarray(mesh.visual.vertex_colors).T[0:3]
         full_mesh = np.concatenate((vertices,colors[0:3]),axis=0)
-        return colors
+        num_points = colors.shape[1]
+        num_points = num_points - num_points % 16
+        return colors[:, :num_points]
 
     @staticmethod
     def get_incomplete_mesh(dataset_path, class_name, shape_id, view_id):
@@ -64,7 +66,10 @@ class ColoredMeshesDataset(Dataset):
         vertices = np.asarray(mesh_complete.vertices).T
         colors =np.asarray(mesh_complete.visual.vertex_colors).T[0:3]
         full_mesh = np.concatenate((vertices,colors[0:3]),axis=0)
-        return colors
+        num_points = colors.shape[1]
+        num_points = num_points - num_points % 16
+        # print(num_points)
+        return colors[:, :num_points]
 
 def collate_fn(batch):
     batch = sorted(batch, key=lambda x: len(x['target_mesh']), reverse=True)
