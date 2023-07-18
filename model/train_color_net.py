@@ -58,7 +58,7 @@ def train(config, train_dataloader, val_dataloader, num_epochs, device):
         tb.add_scalar("Train_Loss", epoch_loss, epoch)
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
 
-        if epoch % config["save_freq"] == 0:
+        if epoch % config["save_freq"] == 0 and epoch != 0:
             file_name = 'ckpt-epoch-%03d-' % epoch
             file_name = file_name + ".pth"
             output_path = "./ckpts/colored" + "/" + file_name
@@ -84,13 +84,16 @@ if __name__ == "__main__":
                             type=str,
                             default="/media/rauldds/TOSHIBA EXT/ML3G/Full_Project_Dataset")
     args = argParser.parse_args()
-    dataset = ColoredMeshesDataset("overfit",args.dataset_path)
-    train_dataloader = torch.utils.data.DataLoader(dataset, 
+    train_dataset = ColoredMeshesDataset("train",args.dataset_path)
+    val_dataset = ColoredMeshesDataset("val",args.dataset_path)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                                    batch_size=config["batch_size"],
                                                    shuffle=True,
+                                                   num_workers=config['num_workers'],
                                                    collate_fn=collate_fn)
-    val_dataloader = torch.utils.data.DataLoader(dataset,
-                                                   batch_size=config["batch_size"],
-                                                   shuffle=True,
-                                                   collate_fn=collate_fn)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset,
+                                                 batch_size=config["batch_size"],
+                                                 shuffle=True,
+                                                 num_workers=config['num_workers'],
+                                                 collate_fn=collate_fn)
     train(config,train_dataloader, val_dataloader, config["max_epochs"], device)

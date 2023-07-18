@@ -41,7 +41,7 @@ colors = colors[np.newaxis, ...]
 colors = torch.from_numpy(colors).to(torch.double)
 
 num_points = colors.shape[2]
-print(num_points)
+
 colors = colors[:, :, :num_points - num_points % 16]
 
 mesh_target = trimesh.load(target_obj_path)
