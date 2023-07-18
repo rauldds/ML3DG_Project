@@ -49,15 +49,17 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 ckpt = torch.load("./ckpts/ScanObjectNN/ckpt-best-all.pth")
                 model_comp.load_state_dict(ckpt["model_comp"])
                 model_clas.load_state_dict(ckpt["model_clas"])
-            except Exception:
-                ckpt = torch.load("./ckpts/ScanObjectNN/ckpt-best-completion.pth")
-                model_comp.load_state_dict(ckpt["model_comp"])
-                cmp_optim_dict = ckpt["cmp_optim"]
-                cmp_scheduler_dict = ckpt["cmp_scheduler"]
-                ckpt = torch.load("./ckpts/ScanObjectNN/ckpt-best-classification.pth")
-                model_clas.load_state_dict(ckpt["model_clas"])
-                ckpt["cmp_optim"] = cmp_optim_dict
-                ckpt["cmp_scheduler"] = cmp_scheduler_dict
+            except FileNotFoundError:
+                try:
+                    ckpt = torch.load("./ckpts/ScanObjectNN/ckpt-best-completion.pth")
+                    model_comp.load_state_dict(ckpt["model_comp"])
+                except FileNotFoundError:
+                    print("Checkpoint not found for the specified train mode. Training from scratch.")
+                else:
+                    model_clas = GRNet_clas().to(device)  # Instantiate the classification model
+                    print("Only completion checkpoint found. Training only the classification head.")
+            else:
+                model_clas = GRNet_clas().to(device)  # Instantiate the classification model
 
     #Weighted loss to train both completion part and classifcation parts together
     weight_CE = torch.tensor(0.9, requires_grad=True)
@@ -183,7 +185,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 cls_optim.step()
             elif config["train_mode"] == "all":
                 cmp_optim.step()
-                cls_optim.step()
+                # cls_optim.step()
 
                 # # Updating weights based on gradients after each batch iteration
                 # weight_CE.data -= config["cls_net"]['learning_rate'] * weight_CE.grad.data
@@ -362,7 +364,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
             tb.add_hparams(config["cls_net"], metrics_dict)
         elif config["train_mode"] == "all":
-            cmp_scheduler.step()
+            # cmp_scheduler.step()
             cls_scheduler.step(batch_loss)
             # Writing classification train accuracy to tensorboard
             tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
