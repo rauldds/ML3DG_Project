@@ -50,6 +50,8 @@ class ColoredMeshesDataset(Dataset):
         full_mesh = np.concatenate((vertices,colors[0:3]),axis=0)
         num_points = colors.shape[1]
         num_points = num_points - num_points % 16
+        # Ensure that the number of points in the point clouds is a multiple of 16, and ensure that the shapes remain
+        # consistent after passing through four layers of convolution and convolution transpose
         return colors[:, :num_points]
 
     @staticmethod
@@ -68,7 +70,8 @@ class ColoredMeshesDataset(Dataset):
         full_mesh = np.concatenate((vertices,colors[0:3]),axis=0)
         num_points = colors.shape[1]
         num_points = num_points - num_points % 16
-        # print(num_points)
+        # Ensure that the number of points in the point clouds is a multiple of 16, and ensure that the shapes remain
+        # consistent after passing through four layers of convolution and convolution transpose
         return colors[:, :num_points]
 
 def collate_fn(batch):

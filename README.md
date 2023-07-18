@@ -69,7 +69,11 @@ To start training the color net of the model simply run:
 ```sh
 python3 -m model.train_runner -dp <DATASET PATH>
 ```
-In the dataloader modify the split that is being used accordingly.
+
+Notes:
+- In the dataloader modify the split that is being used accordingly.
+- Create a folder /{PATH_TO_ML3DG_PROJECT}/ckpts/colored to store the checkpoints.
+- Configuration can be set in /{PATH_TO_ML3DG_PROJECT}/config/color_net_config.py
 
 ## Inference
 Once the completion model is trained, you can visualize how well it performs by simply running: 
@@ -79,6 +83,10 @@ python3 -m inference.object_completion
 Once the classification model is trained, you can check how well it performs by simply running: 
 ```
 python3 -m inference.object_classification
+```
+Once the colorization model is trained, you can check how well it performs by simply running: 
+```
+python3 -m inference.object_colorization
 ```
 Notes: You have to modify the path of the dataset in this script. Probably would be a good idea to pass the dataset as an argument.
 

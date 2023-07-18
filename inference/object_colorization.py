@@ -78,9 +78,5 @@ save_colors[:, :predicted_color.shape[1]] = predicted_color
 
 mesh_target.visual.vertex_colors = save_colors.T.astype(np.uint8)
 
-###debug
-color_test = mesh_target.visual.vertex_colors
-print(color_test)
-###
 mesh_target.show()
 
