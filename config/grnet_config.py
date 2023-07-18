@@ -3,9 +3,9 @@ config = {
     'is_overfit': False,
     'num_workers': 8,
     'save_freq': 10,
-    'batch_size': 48,
-    'batch_size_val': 48,
-    'max_epochs': 50,
+    'batch_size': 54,
+    'batch_size_val': 54,
+    'max_epochs': 80,
     'validate_every_n': 500,
     'learning_rate': 0.00001,
     'weight_decay': 1e-4,
@@ -14,7 +14,7 @@ config = {
     'gamma': 0.95,
     'learning_rate_loss_weights': 0.0001,
     "cls_net":{
-        'learning_rate': 0.001,
+        'learning_rate': 0.00012,
         'weight_decay': 1e-4,
     }
 }

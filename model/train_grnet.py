@@ -76,7 +76,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
     cmp_scheduler = torch.optim.lr_scheduler.MultiStepLR(cmp_optim, 
                                                          milestones = config["milestones"],
                                                          gamma = config["gamma"])
-    cls_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(cls_optim, min_lr=1e-10)
+    cls_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(cls_optim, min_lr=1e-10, patience=20)
 
     # Setting nets in training mode based on the value of the train_mode flag
     if config["train_mode"] == "completion":
@@ -86,7 +86,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
         model_comp.eval()
         model_clas.train()
     elif config["train_mode"] == "all":
-        model_comp.train()
+        model_comp.eval()
         model_clas.train()
 
     # Load the scheduler and optimizer state from checkpoint when the resume flag is True
@@ -190,12 +190,12 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 # weight_L1.data -= config['learning_rate'] * weight_L1.grad.data
 
                 # Updating weights based on gradients after each batch iteration
-                weight_CE.data -= config['learning_rate_loss_weights'] * weight_CE.grad.data
-                weight_L1.data -= config['learning_rate_loss_weights'] * weight_L1.grad.data
-
-                #Setting gradients to 0 after each batch iteration
-                weight_L1.grad.data.zero_()
-                weight_CE.grad.data.zero_()
+                # weight_CE.data -= config['learning_rate_loss_weights'] * weight_CE.grad.data
+                # weight_L1.data -= config['learning_rate_loss_weights'] * weight_L1.grad.data
+                #
+                # #Setting gradients to 0 after each batch iteration
+                # weight_L1.grad.data.zero_()
+                # weight_CE.grad.data.zero_()
 
             # Obtaining the batch loss after each batch iteration
             batch_loss += loss.item()
@@ -295,11 +295,14 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                         elif config["train_mode"] == "classification":
                             loss = classification_loss_criterion(class_pred, class_target)
                         elif config["train_mode"] == "all":
-                            loss_comp = completion_loss_criterion(reconstruction, target_sdf)
+                            # loss_comp = completion_loss_criterion(reconstruction, target_sdf)
                             loss_class = classification_loss_criterion(class_pred, class_target)
-                            scaled_loss_CE = weight_CE * loss_class
-                            scaled_loss_comp = weight_L1 * loss_comp
-                            loss = scaled_loss_CE + scaled_loss_comp
+
+                            # scaled_loss_CE = weight_CE * loss_class
+                            # scaled_loss_comp = weight_L1 * loss_comp
+                            # loss = scaled_loss_CE + scaled_loss_comp
+
+                            loss = loss_class
 
                     # Obtaining validation loss after each val batch iteration
                     val_loss += loss.item()
