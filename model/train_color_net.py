@@ -1,0 +1,67 @@
+from model.color_net import EncoderDecoder
+from utils.color_class import ColoredMeshesDataset, collate_fn
+import torch
+import argparse
+from torch.utils.tensorboard import SummaryWriter
+from config import color_net_config
+def train(config, train_dataloader,num_epochs):
+    model = EncoderDecoder()
+    model = model.to(torch.double)
+
+    # Define your loss function
+    criterion = torch.nn.L1Loss()
+
+    # Define your optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
+    tb = SummaryWriter()
+    # Training loop
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        for batch in train_dataloader:
+            # Zero the parameter gradients
+            optimizer.zero_grad()
+            target_mesh = batch['target_mesh'].to(torch.double)
+            incomplete_mesh = batch['incomplete_mesh'].to(torch.double)
+            #print((incomplete_mesh.dtype))
+
+            # Forward pass
+            outputs = model(incomplete_mesh)
+            loss = criterion(outputs, target_mesh)
+
+            # Backward pass and optimization
+            loss.backward()
+            optimizer.step()
+
+            # Track the loss
+            running_loss += loss.item()
+
+        # Print the average loss for the epoch
+        epoch_loss = running_loss / len(train_dataloader)
+        tb.add_scalar("Train_Loss", epoch_loss, epoch)
+        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
+
+
+    file_name = 'ckpt-epoch-%03d-' % epoch
+    file_name = file_name + ".pth"
+    output_path = "./ckpts/colored" + "/" + file_name
+    torch.save({
+        'epoch_index': epoch,
+        'model': model.state_dict(),
+        'optim': optimizer.state_dict(),
+    }, output_path)  # yapf: disable
+    # After training, you can use the trained model for inference
+
+if __name__ == "__main__":
+    config = color_net_config.config
+    argParser = argparse.ArgumentParser()
+    argParser.add_argument("-dp", "--dataset_path",
+                            help="dataset path",
+                            type=str,
+                            default="/media/rauldds/TOSHIBA EXT/ML3G/Full_Project_Dataset")
+    args = argParser.parse_args()
+    dataset = ColoredMeshesDataset("overfit",args.dataset_path)
+    train_dataloader = torch.utils.data.DataLoader(dataset, 
+                                                   batch_size=config["batch_size"],
+                                                   shuffle=True,
+                                                   collate_fn=collate_fn)
+    train(config,train_dataloader,config["max_epochs"])
