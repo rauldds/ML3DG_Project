@@ -84,9 +84,11 @@ Once the classification model is trained, you can check how well it performs by 
 ```
 python3 -m inference.object_classification
 ```
+
 Once the colorization model is trained, you can check how well it performs by simply running: 
 ```
-python3 -m inference.object_colorization
+python3 -m inference.completion_and_classification
+
 ```
 Notes: You have to modify the path of the dataset in this script. Probably would be a good idea to pass the dataset as an argument.
 

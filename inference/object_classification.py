@@ -64,7 +64,6 @@ for count, sample_path in enumerate(sample_paths):
     cls = model.forward(data=voxels,skip=skip)
     cls = cls.detach().cpu().numpy()
     cls = np.argmax(cls)
-    print(cls)
     for key, value in CLASS_MAP.items():
         if value == cls:
             print(f'GT: {class_names[count]}')

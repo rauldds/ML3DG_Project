@@ -4,6 +4,7 @@ from data_e3.shapenet import ShapeNet
 from model.grnet import GRNet_clas, GRNet_comp
 import skimage
 from torch.utils.tensorboard import SummaryWriter
+import numpy as np
 import utils.data_loaders
 
 torch.autograd.set_detect_anomaly(True)
@@ -48,19 +49,21 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 ckpt = torch.load("./ckpts/ScanObjectNN/ckpt-best-all.pth")
                 model_comp.load_state_dict(ckpt["model_comp"])
                 model_clas.load_state_dict(ckpt["model_clas"])
-            except Exception:
-                ckpt = torch.load("./ckpts/ScanObjectNN/ckpt-best-completion.pth")
-                model_comp.load_state_dict(ckpt["model_comp"])
-                cmp_optim_dict = ckpt["cmp_optim"]
-                cmp_scheduler_dict = ckpt["cmp_scheduler"]
-                ckpt = torch.load("./ckpts/ScanObjectNN/ckpt-best-classification.pth")
-                model_clas.load_state_dict(ckpt["model_clas"])
-                ckpt["cmp_optim"] = cmp_optim_dict
-                ckpt["cmp_scheduler"] = cmp_scheduler_dict
+            except FileNotFoundError:
+                try:
+                    ckpt = torch.load("./ckpts/ScanObjectNN/ckpt-best-completion.pth")
+                    model_comp.load_state_dict(ckpt["model_comp"])
+                except FileNotFoundError:
+                    print("Checkpoint not found for the specified train mode. Training from scratch.")
+                else:
+                    model_clas = GRNet_clas().to(device)  # Instantiate the classification model
+                    print("Only completion checkpoint found. Training only the classification head.")
+            else:
+                model_clas = GRNet_clas().to(device)  # Instantiate the classification model
 
     #Weighted loss to train both completion part and classifcation parts together
-    weight_CE = torch.tensor(0.5, requires_grad=True)
-    weight_L1 = torch.tensor(0.5, requires_grad=True)
+    weight_CE = torch.tensor(0.9, requires_grad=True)
+    weight_L1 = torch.tensor(0.1, requires_grad=True)
 
     # Defining the optimizers for each network
     cmp_optim = torch.optim.Adam(model_comp.parameters(),
@@ -75,7 +78,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
     cmp_scheduler = torch.optim.lr_scheduler.MultiStepLR(cmp_optim, 
                                                          milestones = config["milestones"],
                                                          gamma = config["gamma"])
-    cls_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(cls_optim, min_lr=1e-10)
+    cls_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(cls_optim, min_lr=1e-10, patience=20)
 
     # Setting nets in training mode based on the value of the train_mode flag
     if config["train_mode"] == "completion":
@@ -85,7 +88,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
         model_comp.eval()
         model_clas.train()
     elif config["train_mode"] == "all":
-        model_comp.train()
+        model_comp.eval()
         model_clas.train()
 
     # Load the scheduler and optimizer state from checkpoint when the resume flag is True
@@ -139,7 +142,13 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                     cls_recon = torch.exp(reconstruction)-1
                     # Had to detach to stop the classification net from trying to compute 
                     # gradients all the way back in the completion net
-                    skip_detached = {key: value.detach() for key, value in skip.items()}
+                    #skip_detached = {key: value.detach() for key, value in skip.items()}
+                    # APPARENTLY THE HEAD GOT USED TO RECEIVING ONES
+                    skip_detached = {
+                        '32_r': torch.ones([config["batch_size"], 32, 32, 32, 32],device=device),
+                        '16_r': torch.ones([config["batch_size"], 64, 16, 16, 16],device=device),
+                        '8_r': torch.ones([config["batch_size"], 128, 8, 8, 8],device=device)
+                    }
                     class_pred = model_clas(cls_recon.detach(),skip_detached)
 
             # Extract targets for loss computation
@@ -176,15 +185,19 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                 cls_optim.step()
             elif config["train_mode"] == "all":
                 cmp_optim.step()
-                cls_optim.step()
+                # cls_optim.step()
+
+                # # Updating weights based on gradients after each batch iteration
+                # weight_CE.data -= config["cls_net"]['learning_rate'] * weight_CE.grad.data
+                # weight_L1.data -= config['learning_rate'] * weight_L1.grad.data
 
                 # Updating weights based on gradients after each batch iteration
-                weight_CE -= config["cls_net"]['learning_rate'] * weight_CE.grad.data
-                weight_L1 -= config['learning_rate'] * weight_L1.grad.data
-
-                #Setting gradients to 0 after each batch iteration
-                weight_L1.grad.data.zero()
-                weight_CE.grad.data.zero()
+                # weight_CE.data -= config['learning_rate_loss_weights'] * weight_CE.grad.data
+                # weight_L1.data -= config['learning_rate_loss_weights'] * weight_L1.grad.data
+                #
+                # #Setting gradients to 0 after each batch iteration
+                # weight_L1.grad.data.zero_()
+                # weight_CE.grad.data.zero_()
 
             # Obtaining the batch loss after each batch iteration
             batch_loss += loss.item()
@@ -244,30 +257,29 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
 
                         # Generate visualization meshes for the reconstruction, input and target
                         # SDFs to observe completion net changes through diffferent steps
-                        if config["train_mode"] != "classification" and not sample_mesh_obtained:
-                            sample_mesh_obtained = True
+                        if config["train_mode"] != "classification":
                             # Reconstruction mesh obtention
                             vis_recon = reconstruction[0]
-                            vis_recon = torch.exp(vis_recon)-1
+                            vis_recon = torch.exp(vis_recon) - 1
                             vis_recon = vis_recon.detach().cpu().numpy()
                             vis_recon = vis_recon.reshape((64, 64, 64))
                             vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_recon, level=0)
-                            vert_recon = torch.as_tensor([vertices], dtype=torch.float)
-                            faces_recon = torch.as_tensor([faces], dtype=torch.int)
+                            vert_recon = torch.as_tensor(np.array([vertices]), dtype=torch.float)
+                            faces_recon = torch.as_tensor(np.array([faces]), dtype=torch.int)
                             # Input mesh obtention
                             vis_inc = batch_val["incomplete_view"][0]
                             vis_inc = vis_inc.detach().cpu().numpy()
                             vis_inc = vis_inc.reshape((64, 64, 64))
                             vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_inc, level=0)
-                            vert_inc = torch.as_tensor([vertices], dtype=torch.float)
-                            faces_inc = torch.as_tensor([faces], dtype=torch.int)
+                            vert_inc = torch.as_tensor(np.array([vertices]), dtype=torch.float)
+                            faces_inc = torch.as_tensor(np.array([faces]), dtype=torch.int)
                             # Target mesh obtention
                             vis_com = batch_val["target_sdf"][0]
                             vis_com = vis_com.detach().cpu().numpy()
                             vis_com = vis_com.reshape((64, 64, 64))
                             vertices, faces, normals, _ = skimage.measure.marching_cubes(vis_com, level=0)
-                            vert_com = torch.as_tensor([vertices], dtype=torch.float)
-                            faces_com = torch.as_tensor([faces], dtype=torch.int)
+                            vert_com = torch.as_tensor(np.array([vertices]), dtype=torch.float)
+                            faces_com = torch.as_tensor(np.array([faces]), dtype=torch.int)
 
                         # Extract targets for loss computation
                         target_sdf = batch_val["target_sdf"]
@@ -285,11 +297,14 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
                         elif config["train_mode"] == "classification":
                             loss = classification_loss_criterion(class_pred, class_target)
                         elif config["train_mode"] == "all":
-                            loss_comp = completion_loss_criterion(reconstruction, target_sdf)
+                            # loss_comp = completion_loss_criterion(reconstruction, target_sdf)
                             loss_class = classification_loss_criterion(class_pred, class_target)
-                            scaled_loss_CE = weight_CE * loss_class
-                            scaled_loss_comp = weight_L1 * loss_comp
-                            loss = scaled_loss_CE + scaled_loss_comp
+
+                            # scaled_loss_CE = weight_CE * loss_class
+                            # scaled_loss_comp = weight_L1 * loss_comp
+                            # loss = scaled_loss_CE + scaled_loss_comp
+
+                            loss = loss_class
 
                     # Obtaining validation loss after each val batch iteration
                     val_loss += loss.item()
@@ -333,7 +348,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
         # Averaging batch loss and train accuracy based on the number of training batches
         batch_loss = batch_loss/len(train_dataloader)
         train_accuracy = train_accuracy/len(train_dataloader)
-        print(f'[{epoch:03d}] Train_loss: {batch_loss:.6f}')
+        print(f'[{epoch:03d}] Train_loss: {batch_loss:.6f}, weight for CE loss:{weight_CE:.4f}, weight for L1 loss:{weight_L1:.6f}')
         # Writing batch loss to tensorboard every epoch
         tb.add_scalar("Train_Loss", batch_loss, epoch)
         metrics_dict ={"train loss": batch_loss,
@@ -349,7 +364,7 @@ def train(model_comp, model_clas, train_dataloader, val_dataloader,
             tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
             tb.add_hparams(config["cls_net"], metrics_dict)
         elif config["train_mode"] == "all":
-            cmp_scheduler.step()
+            # cmp_scheduler.step()
             cls_scheduler.step(batch_loss)
             # Writing classification train accuracy to tensorboard
             tb.add_scalar("Cls Train Accuracy", train_accuracy, epoch)
