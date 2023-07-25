@@ -37,7 +37,10 @@ class ColoredMeshesDataset(Dataset):
             "target_mesh": complete_mesh,
             "incomplete_mesh": incomplete_mesh
         }
-
+    @staticmethod
+    def send_data_to_device(batch_val, device):
+        batch_val["target_mesh"] = batch_val["target_mesh"].to(device)
+        batch_val["incomplete_mesh"] = batch_val["incomplete_mesh"].to(device)
     @staticmethod
     def get_target_mesh(dataset_path, class_name, shape_id):
         target_path = dataset_path+ '/GT/colorized_meshes/' + class_name + f"/{shape_id}.obj"
@@ -45,7 +48,11 @@ class ColoredMeshesDataset(Dataset):
         vertices = np.asarray(mesh.vertices).T
         colors = np.asarray(mesh.visual.vertex_colors).T[0:3]
         full_mesh = np.concatenate((vertices,colors[0:3]),axis=0)
-        return colors
+        num_points = colors.shape[1]
+        num_points = num_points - num_points % 16
+        # Ensure that the number of points in the point clouds is a multiple of 16, and ensure that the shapes remain
+        # consistent after passing through four layers of convolution and convolution transpose
+        return colors[:, :num_points]
 
     @staticmethod
     def get_incomplete_mesh(dataset_path, class_name, shape_id, view_id):
@@ -61,7 +68,11 @@ class ColoredMeshesDataset(Dataset):
         vertices = np.asarray(mesh_complete.vertices).T
         colors =np.asarray(mesh_complete.visual.vertex_colors).T[0:3]
         full_mesh = np.concatenate((vertices,colors[0:3]),axis=0)
-        return colors
+        num_points = colors.shape[1]
+        num_points = num_points - num_points % 16
+        # Ensure that the number of points in the point clouds is a multiple of 16, and ensure that the shapes remain
+        # consistent after passing through four layers of convolution and convolution transpose
+        return colors[:, :num_points]
 
 def collate_fn(batch):
     batch = sorted(batch, key=lambda x: len(x['target_mesh']), reverse=True)
