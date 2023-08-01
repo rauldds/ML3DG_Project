@@ -133,12 +133,6 @@ To start training the whole model simply run:
 python3 -m src.train_runner -tr all
 ```
 
-Notes: 
-- In the dataloader (line 19) you have to modify the dataset path with its location. PROBABLY WOULD BE A GOOD IDEA TO PASS THE DATASET PATH AS AN ARGUMENT FOR THE DATALOADER.
-- If you want to also resume from a checkpoint simply add the flag `--resume True` when executing any of the commands above.
-- If you want to try overfitting/train completion with shapenet the `shapenet.py` script in data_e3 has to be updated with complete functions. Additionally, the dataset sign and distance value doesn't have to be separated and probably we wouldn't have to use the LOG SCALING. Once that is done, training completion with shapenet should be possible with `--dataset Shapenet`
-- SHOULD WE ALSO DO THE LOG SCALING AS IN EXERCISE 3?
-
 ### Color completion
 To start training the color net of the model simply run:
 ```sh
