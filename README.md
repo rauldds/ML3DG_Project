@@ -1,5 +1,7 @@
 # ML3DG_Project
-Reimplementation of [GRNet](https://github.com/hzxie/GRNet) with a few modifications as part of a University Project
+Reimplementation of [GRNet](https://github.com/hzxie/GRNet) with a few modifications as part of a University Project.
+
+![alt text](https://github.com/rauldds/ML3DG_Project/blob/main/imgs/structure_grnet.png)
 
 ## First Steps:
 When you clone this repository do it recursively, to make sure that the manifold package in additional_repos is also getting installed.
